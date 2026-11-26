@@ -1,114 +1,163 @@
-import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { Link } from "react-router-dom";
+import {
+    Building2,
+    CalendarCheck,
+    CheckCircle2,
+    Compass,
+    ShieldCheck,
+    Users,
+} from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
+import { getDashboardPath } from "../config/navigation";
 
 const features = [
     {
-        title: "Raise Issues Easily",
-        desc: "Submit campus issues in seconds — attendance, fine, results, infrastructure and more.",
+        title: "Discover Campus Clubs",
+        desc: "Browse technical, cultural, and academic clubs across the university and join communities that match your interests.",
+        icon: Users,
     },
     {
-        title: "Track in Real Time",
-        desc: "Watch your issue move from Open → In Progress → Resolved with live status updates.",
+        title: "Event Discovery & Tickets",
+        desc: "Explore approved campus events, register in seconds, and keep your event passes organized in one place.",
+        icon: CalendarCheck,
     },
     {
-        title: "Secure & Role-based",
-        desc: "Students see only their issues. Admins manage everything. JWT-protected throughout.",
+        title: "Streamlined Faculty Approvals",
+        desc: "Club Heads submit proposals and Faculty coordinators review, approve, and oversee campus-wide activities.",
+        icon: ShieldCheck,
     },
 ];
 
-const steps = [
-    { num: "01", title: "Register & Login", desc: "Create your student account with your roll number and email." },
-    { num: "02", title: "Raise an Issue", desc: "Describe your problem, pick a category, and submit." },
-    { num: "03", title: "Admin Reviews", desc: "The admin assigns a department, priority, and remark." },
-    { num: "04", title: "Issue Resolved", desc: "You get notified of the final status — tracked end to end." },
+const roles = [
+    {
+        name: "Students",
+        desc: "Explore upcoming events, join clubs, and manage your tickets from a personalized dashboard.",
+        icon: Compass,
+    },
+    {
+        name: "Club Heads",
+        desc: "Coordinate club profiles, organize events, track registrations, and share announcements.",
+        icon: Building2,
+    },
+    {
+        name: "Faculty Coordinators",
+        desc: "Review event proposals, monitor club operations, and view university-wide analytics.",
+        icon: CheckCircle2,
+    },
 ];
-
-const categories = ["Attendance", "Fine", "Result", "Network", "Portal", "Infrastructure", "Other"];
 
 const Landing = () => {
-    const navigate = useNavigate();
+    const { user, token } = useContext(AuthContext);
+    const dashboardPath = getDashboardPath(user?.role);
 
     return (
-        <div className="min-h-screen">
-            <section className="bg-indigo-700 text-white">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-24 text-center">
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                        Campus issues,
-                        <br />
-                        <span className="text-indigo-200">resolved faster 🚀</span>
+        <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+            {/* Hero */}
+            <section className="bg-gradient-to-b from-indigo-700 to-indigo-800 dark:from-slate-900 dark:to-slate-950 text-white border-b border-indigo-600/20 dark:border-slate-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-indigo-100 border border-white/15 mb-6">
+                        University Club &amp; Event Management System
+                    </span>
+                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight max-w-3xl mx-auto">
+                        One unified portal for campus clubs, events, and approvals
                     </h1>
-                    <p className="text-lg text-indigo-200 max-w-xl mx-auto mb-10 leading-relaxed">
-                        A streamlined platform for students to raise campus complaints and for admins to track and resolve them — end to end.
+                    <p className="text-base sm:text-lg text-indigo-100 dark:text-slate-300 max-w-2xl mx-auto mb-9 leading-relaxed">
+                        Connect students, club coordinators, and faculty in a single organized workspace—from discovering events to managing approvals.
                     </p>
-                    <div className="flex items-center justify-center gap-4 flex-wrap">
-                        <button
-                            onClick={() => navigate("/register")}
-                            className="px-7 py-3.5 bg-white text-indigo-700 font-bold rounded-xl shadow hover:bg-slate-50 transition-colors text-sm"
-                        >
-                            Get Started Free
-                        </button>
-                        <button
-                            onClick={() => navigate("/login")}
-                            className="px-7 py-3.5 bg-indigo-600 text-white font-semibold rounded-xl border border-indigo-500 hover:bg-indigo-500 transition-colors text-sm"
-                        >
-                            Login
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-                <h2 className="text-2xl font-bold text-center text-slate-900 mb-3">Why CampusResolve?</h2>
-                <p className="text-slate-500 text-center mb-12 text-sm">Built for students, managed by admins — simple as that.</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {features.map((f, i) => (
-                        <div key={i} className="card p-6">
-                            <h3 className="font-bold text-slate-900 mb-2 text-base">{f.title}</h3>
-                            <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="bg-white border-y border-slate-100 py-16">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-3">Issue Categories</h2>
-                    <p className="text-slate-500 text-sm mb-10">Raise issues across 7 campus departments</p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {categories.map((cat) => (
-                            <span
-                                key={cat}
-                                className="px-5 py-2 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium border border-indigo-100"
+                    <div className="flex items-center justify-center gap-3 flex-wrap">
+                        {token && user ? (
+                            <Link
+                                to={dashboardPath}
+                                className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-white text-indigo-700 font-semibold rounded-lg shadow-sm hover:bg-indigo-50 transition-colors text-sm no-underline"
                             >
-                                {cat}
-                            </span>
-                        ))}
+                                Open Dashboard
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/register"
+                                    className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-white text-indigo-700 font-semibold rounded-lg shadow-sm hover:bg-indigo-50 transition-colors text-sm no-underline"
+                                >
+                                    Get Started
+                                </Link>
+                                <Link
+                                    to="/login"
+                                    className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-indigo-600/70 dark:bg-slate-800 text-white font-semibold rounded-lg border border-indigo-400/40 dark:border-slate-700 hover:bg-indigo-600 dark:hover:bg-slate-700 transition-colors text-sm no-underline"
+                                >
+                                    Sign In
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>
 
-            <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-                <h2 className="text-2xl font-bold text-center text-slate-900 mb-3">How it Works</h2>
-                <p className="text-slate-500 text-center mb-12 text-sm">Four steps from problem to resolution</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {steps.map((step) => (
-                        <div key={step.num} className="card p-6 h-full">
-                            <span className="text-3xl font-black text-indigo-100">{step.num}</span>
-                            <h3 className="font-bold text-slate-900 mt-2 mb-2 text-sm">{step.title}</h3>
-                            <p className="text-slate-500 text-xs leading-relaxed">{step.desc}</p>
-                        </div>
-                    ))}
+            {/* Features */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+                <div className="text-center max-w-2xl mx-auto mb-12">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                        Built for campus life
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Structured workflows for every role on campus.
+                    </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {features.map((feature) => {
+                        const Icon = feature.icon;
+                        return (
+                            <div key={feature.title} className="card p-6">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
+                                    <Icon className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-semibold text-slate-900 dark:text-white text-base mb-2">
+                                    {feature.title}
+                                </h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    {feature.desc}
+                                </p>
+                            </div>
+                        );
+                    })}
                 </div>
             </section>
 
-            <section className="bg-indigo-700 py-16 text-white text-center">
-                <h2 className="text-2xl font-bold mb-3">Ready to raise your first issue?</h2>
-                <p className="text-indigo-200 text-sm mb-8">Join your campus community on CampusResolve.</p>
-                <button
-                    onClick={() => navigate("/register")}
-                    className="px-8 py-3.5 bg-white text-indigo-700 font-bold rounded-xl shadow hover:bg-slate-50 transition-colors text-sm"
-                >
-                    Create an Account
-                </button>
+            {/* Roles */}
+            <section className="bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 py-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <div className="text-center max-w-2xl mx-auto mb-12">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                            Role-based workspaces
+                        </h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Tailored navigation and dashboards for students, club heads, and faculty.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {roles.map((role) => {
+                            const Icon = role.icon;
+                            return (
+                                <div
+                                    key={role.name}
+                                    className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                                            <Icon className="w-4 h-4" />
+                                        </span>
+                                        <h3 className="font-semibold text-slate-900 dark:text-white text-base">
+                                            {role.name}
+                                        </h3>
+                                    </div>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                        {role.desc}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             </section>
         </div>
     );

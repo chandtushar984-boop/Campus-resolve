@@ -1,52 +1,41 @@
-/*
-this is for like login to hai, but is user ko ye kam karne ki persmission nahi hai
+export const isFacultyRole = (role) => role === "faculty" || role === "admin";
 
-example
-student -> GET/all-issues -> not allowed
-admin -> GET/all-issues -> allowed
+export const authorizeRoles = (...allowedRoles) => {
+    return (req, res, next) => {
+        try {
+            const userRole = req.user?.role;
+            if (!userRole) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Authentication required.",
+                });
+            }
 
-flow
+            const hasAccess = allowedRoles.some((allowed) => {
+                if (allowed === "faculty" || allowed === "admin") {
+                    return isFacultyRole(userRole);
+                }
+                return userRole === allowed;
+            });
 
-Request
-   │
-   ▼
-Auth Middleware
-(Token Verify)
-   │
-   ▼
-req.user
-{
-   userId,
-   role
-}
-   │
-   ▼
-Role Middleware
-(Check role)
-   │
-   ▼
-Controller
+            if (!hasAccess) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Access denied. Insufficient permissions.",
+                });
+            }
 
- */
-
-
-const authorizeAdmin = (req, res, next) => {
-    try {
-        if (req.user.role !== "admin") {
-            return res.status(403).json({
+            next();
+        } catch (error) {
+            return res.status(500).json({
                 success: false,
-                message: "Access denied. Admin only.",
+                message: "Authorization failed",
+                error: error.message,
             });
         }
-
-        next();
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Authorization failed",
-            error: error.message,
-        });
-    }
+    };
 };
+
+const authorizeAdmin = authorizeRoles("faculty", "admin");
 
 export default authorizeAdmin;

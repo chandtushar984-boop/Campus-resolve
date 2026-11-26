@@ -1,8 +1,10 @@
 import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 import api from "../services/api";
 import { Toast } from "../utils/toast.js";
 import { AuthContext } from "../context/AuthContext.jsx";
+import { getDashboardPath } from "../config/navigation.js";
 
 const STUDENT_EMAIL_REGEX = /^\d{10}@krmu\.edu\.in$/;
 const ROLL_NO_REGEX = /^\d{10}$/;
@@ -35,11 +37,7 @@ const Register = () => {
 
     useEffect(() => {
         if (token && user) {
-            if (user.role === "admin") {
-                navigate("/admin/dashboard", { replace: true });
-            } else {
-                navigate("/student/dashboard", { replace: true });
-            }
+            navigate(getDashboardPath(user.role), { replace: true });
         }
     }, [token, user, navigate]);
 
@@ -100,33 +98,21 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-slate-50 py-12">
+        <div className="min-h-[calc(100vh-130px)] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 py-10">
             <div className="w-full max-w-lg">
-                <div className="text-center mb-8">
-                    <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 items-center justify-center shadow-lg mb-4">
-                        <svg
-                            className="w-7 h-7 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2.5}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                        </svg>
+                <div className="text-center mb-7">
+                    <div className="inline-flex w-12 h-12 rounded-xl bg-indigo-600 items-center justify-center shadow-sm mb-4 text-white">
+                        <UserPlus className="w-6 h-6" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                         Create your account
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                         Student registration for CampusResolve
                     </p>
                 </div>
 
-                <div className="card p-8">
+                <div className="card p-6 sm:p-8">
                     <form
                         onSubmit={handleSubmit}
                         className="space-y-4"
@@ -134,8 +120,11 @@ const Register = () => {
                     >
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="form-label">Full Name</label>
+                                <label htmlFor="reg-name" className="form-label">
+                                    Full Name
+                                </label>
                                 <input
+                                    id="reg-name"
                                     type="text"
                                     name="name"
                                     placeholder="Rahul Sharma"
@@ -146,10 +135,11 @@ const Register = () => {
                                 />
                             </div>
                             <div>
-                                <label className="form-label">
+                                <label htmlFor="reg-roll" className="form-label">
                                     Roll Number
                                 </label>
                                 <input
+                                    id="reg-roll"
                                     type="text"
                                     name="rollNo"
                                     placeholder="2301010001"
@@ -161,7 +151,7 @@ const Register = () => {
                                     required
                                 />
                                 {fieldErrors.rollNo && (
-                                    <p className="text-xs text-red-500 mt-1">
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                                         {fieldErrors.rollNo}
                                     </p>
                                 )}
@@ -169,8 +159,11 @@ const Register = () => {
                         </div>
 
                         <div>
-                            <label className="form-label">Email Address</label>
+                            <label htmlFor="reg-email" className="form-label">
+                                Email Address
+                            </label>
                             <input
+                                id="reg-email"
                                 type="email"
                                 name="email"
                                 placeholder="2301010001@krmu.edu.in"
@@ -180,15 +173,18 @@ const Register = () => {
                                 required
                             />
                             {fieldErrors.email && (
-                                <p className="text-xs text-red-500 mt-1">
+                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                                     {fieldErrors.email}
                                 </p>
                             )}
                         </div>
 
                         <div>
-                            <label className="form-label">Password</label>
+                            <label htmlFor="reg-password" className="form-label">
+                                Password
+                            </label>
                             <input
+                                id="reg-password"
                                 type="password"
                                 name="password"
                                 placeholder="Create a strong password"
@@ -201,8 +197,11 @@ const Register = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="form-label">Course</label>
+                                <label htmlFor="reg-course" className="form-label">
+                                    Course
+                                </label>
                                 <select
+                                    id="reg-course"
                                     name="course"
                                     value={formData.course}
                                     onChange={handleChange}
@@ -217,14 +216,17 @@ const Register = () => {
                                     ))}
                                 </select>
                                 {fieldErrors.course && (
-                                    <p className="text-xs text-red-500 mt-1">
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                                         {fieldErrors.course}
                                     </p>
                                 )}
                             </div>
                             <div>
-                                <label className="form-label">Semester</label>
+                                <label htmlFor="reg-semester" className="form-label">
+                                    Semester
+                                </label>
                                 <input
+                                    id="reg-semester"
                                     type="text"
                                     name="semester"
                                     placeholder="5th"
@@ -239,20 +241,18 @@ const Register = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                            className="btn-primary w-full py-2.5 text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {isLoading
-                                ? "Creating account..."
-                                : "Create Account"}
+                            {isLoading ? "Creating account..." : "Create Account"}
                         </button>
                     </form>
                 </div>
 
-                <p className="text-center mt-5 text-sm text-slate-500">
+                <p className="text-center mt-5 text-sm text-slate-500 dark:text-slate-400">
                     Already have an account?{" "}
                     <Link
                         to="/login"
-                        className="font-semibold text-indigo-600 hover:text-indigo-700"
+                        className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                     >
                         Sign in
                     </Link>
