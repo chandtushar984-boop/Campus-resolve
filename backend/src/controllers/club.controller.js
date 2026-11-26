@@ -3,15 +3,17 @@ import Club, { CLUB_CATEGORIES } from "../models/club.model.js";
 import ClubMembership from "../models/clubMembership.model.js";
 import ClubAnnouncement from "../models/clubAnnouncement.model.js";
 import User from "../models/user.model.js";
-import { isFacultyRole } from "../middleware/role.middleware.js";
+import { isClubOrganizerRole, isFacultyRole } from "../middleware/role.middleware.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const canManageClub = (club, user) => {
     if (!club || !user) return false;
     if (isFacultyRole(user.role)) return true;
-    if (user.role === "club_head" && club.clubHead) {
-        return club.clubHead.toString() === user.userId;
+    if (isClubOrganizerRole(user.role)) {
+        const isHead = club.clubHead && club.clubHead.toString() === user.userId;
+        const isCoHead = club.coHead && club.coHead.toString() === user.userId;
+        return Boolean(isHead || isCoHead);
     }
     return false;
 };
@@ -87,6 +89,7 @@ const getAllClubs = async (req, res) => {
 
         const clubs = await Club.find(filter)
             .populate("clubHead", "name email rollNo")
+            .populate("coHead", "name email rollNo")
             .sort({ createdAt: -1 })
             .lean();
 
@@ -131,7 +134,10 @@ const getMyClubs = async (req, res) => {
         const memberships = await ClubMembership.find({ user: req.user.userId })
             .populate({
                 path: "club",
-                populate: { path: "clubHead", select: "name email" },
+                populate: [
+                    { path: "clubHead", select: "name email" },
+                    { path: "coHead", select: "name email" },
+                ],
             })
             .sort({ joinedAt: -1 })
             .lean();
@@ -177,6 +183,7 @@ const getClubById = async (req, res) => {
 
         const club = await Club.findById(id)
             .populate("clubHead", "name email rollNo course")
+            .populate("coHead", "name email rollNo course")
             .lean();
 
         if (!club) {
@@ -285,6 +292,7 @@ const updateClub = async (req, res) => {
 
         const updated = await Club.findById(id)
             .populate("clubHead", "name email rollNo course")
+            .populate("coHead", "name email rollNo course")
             .lean();
         const memberCount = await ClubMembership.countDocuments({ club: id });
 
@@ -304,89 +312,161 @@ const updateClub = async (req, res) => {
     }
 };
 
-const assignClubHead = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { userId } = req.body;
+const assignClubRole = async ({ clubId, userId, field, userRole, membershipRole, res }) => {
+    if (!isValidObjectId(clubId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid club ID is required.",
+        });
+    }
 
-        if (!isValidObjectId(id) || !isValidObjectId(userId)) {
-            return res.status(400).json({
-                success: false,
-                message: "Valid club ID and user ID are required.",
-            });
-        }
+    const club = await Club.findById(clubId);
+    if (!club) {
+        return res.status(404).json({
+            success: false,
+            message: "Club not found.",
+        });
+    }
 
-        const club = await Club.findById(id);
-        if (!club) {
-            return res.status(404).json({
-                success: false,
-                message: "Club not found.",
-            });
-        }
-
-        const targetUser = await User.findById(userId);
-        if (!targetUser) {
-            return res.status(404).json({
-                success: false,
-                message: "Student not found.",
-            });
-        }
-
-        if (isFacultyRole(targetUser.role)) {
-            return res.status(400).json({
-                success: false,
-                message: "Faculty accounts cannot be assigned as a student Club Head.",
-            });
-        }
-
-        if (
-            targetUser.managedClub &&
-            targetUser.managedClub.toString() !== club._id.toString()
-        ) {
-            return res.status(409).json({
-                success: false,
-                message: "This user is already assigned as Club Head of another club.",
-            });
-        }
-
-        // Demote previous head of this club if different
-        if (club.clubHead && club.clubHead.toString() !== targetUser._id.toString()) {
-            await User.findByIdAndUpdate(club.clubHead, {
+    // Remove existing assignment when userId is empty/null
+    if (!userId) {
+        const previousId = club[field];
+        if (previousId) {
+            await User.findByIdAndUpdate(previousId, {
                 role: "student",
                 managedClub: null,
             });
             await ClubMembership.findOneAndUpdate(
-                { club: club._id, user: club.clubHead },
+                { club: club._id, user: previousId },
                 { role: "member" }
             );
+            club[field] = null;
+            await club.save();
         }
-
-        targetUser.role = "club_head";
-        targetUser.managedClub = club._id;
-        await targetUser.save();
-
-        club.clubHead = targetUser._id;
-        await club.save();
-
-        await ClubMembership.findOneAndUpdate(
-            { club: club._id, user: targetUser._id },
-            { club: club._id, user: targetUser._id, role: "head" },
-            { upsert: true, new: true }
-        );
-
-        const updatedClub = await Club.findById(id)
+        const refreshed = await Club.findById(clubId)
             .populate("clubHead", "name email rollNo course")
+            .populate("coHead", "name email rollNo course")
             .lean();
-
         return res.status(200).json({
             success: true,
-            message: `${targetUser.name} assigned as Club Head.`,
-            club: updatedClub,
+            message: `${field === "clubHead" ? "Club Head" : "Co-Head"} assignment removed.`,
+            club: refreshed,
+        });
+    }
+
+    if (!isValidObjectId(userId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid user ID is required.",
+        });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+        return res.status(404).json({
+            success: false,
+            message: "Student not found.",
+        });
+    }
+
+    if (isFacultyRole(targetUser.role)) {
+        return res.status(400).json({
+            success: false,
+            message: "Faculty accounts cannot be assigned as a student club organizer.",
+        });
+    }
+
+    const otherField = field === "clubHead" ? "coHead" : "clubHead";
+    if (club[otherField] && club[otherField].toString() === targetUser._id.toString()) {
+        return res.status(409).json({
+            success: false,
+            message: `This user is already assigned as ${
+                otherField === "clubHead" ? "Club Head" : "Co-Head"
+            } of this club. A user cannot hold both roles in the same club.`,
+        });
+    }
+
+    if (
+        targetUser.managedClub &&
+        targetUser.managedClub.toString() !== club._id.toString()
+    ) {
+        return res.status(409).json({
+            success: false,
+            message: "This user is already assigned to manage another club.",
+        });
+    }
+
+    // Demote previous holder of this role if different
+    if (club[field] && club[field].toString() !== targetUser._id.toString()) {
+        await User.findByIdAndUpdate(club[field], {
+            role: "student",
+            managedClub: null,
+        });
+        await ClubMembership.findOneAndUpdate(
+            { club: club._id, user: club[field] },
+            { role: "member" }
+        );
+    }
+
+    targetUser.role = userRole;
+    targetUser.managedClub = club._id;
+    await targetUser.save();
+
+    club[field] = targetUser._id;
+    await club.save();
+
+    await ClubMembership.findOneAndUpdate(
+        { club: club._id, user: targetUser._id },
+        { club: club._id, user: targetUser._id, role: membershipRole },
+        { upsert: true, new: true }
+    );
+
+    const updatedClub = await Club.findById(clubId)
+        .populate("clubHead", "name email rollNo course")
+        .populate("coHead", "name email rollNo course")
+        .lean();
+
+    return res.status(200).json({
+        success: true,
+        message: `${targetUser.name} assigned as ${
+            field === "clubHead" ? "Club Head" : "Co-Head"
+        }.`,
+        club: updatedClub,
+    });
+};
+
+const assignClubHead = async (req, res) => {
+    try {
+        return await assignClubRole({
+            clubId: req.params.id,
+            userId: req.body.userId,
+            field: "clubHead",
+            userRole: "club_head",
+            membershipRole: "head",
+            res,
         });
     } catch (error) {
         return res.status(500).json({
             success: false,
             message: "Failed to assign Club Head.",
+        });
+    }
+};
+
+const assignCoHead = async (req, res) => {
+    try {
+        return await assignClubRole({
+            clubId: req.params.id,
+            userId: req.body.userId,
+            field: "coHead",
+            userRole: "co_head",
+            membershipRole: "co_head",
+            res,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to assign Co-Head.",
         });
     }
 };
@@ -466,10 +546,13 @@ const leaveClub = async (req, res) => {
             });
         }
 
-        if (club.clubHead && club.clubHead.toString() === req.user.userId) {
+        if (
+            (club.clubHead && club.clubHead.toString() === req.user.userId) ||
+            (club.coHead && club.coHead.toString() === req.user.userId)
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Assigned Club Head cannot leave without faculty reassignment.",
+                message: "Assigned Club Head or Co-Head cannot leave without faculty reassignment.",
             });
         }
 
@@ -765,6 +848,7 @@ export {
     getClubById,
     updateClub,
     assignClubHead,
+    assignCoHead,
     joinClub,
     leaveClub,
     getClubMembers,

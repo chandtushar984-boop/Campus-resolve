@@ -14,7 +14,7 @@ const clubMembershipSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ["member", "head"],
+            enum: ["member", "head", "co_head"],
             default: "member",
         },
         joinedAt: {
