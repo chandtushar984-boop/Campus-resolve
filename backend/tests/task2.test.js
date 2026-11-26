@@ -189,7 +189,9 @@ test("updateClub enforces assigned Club Head ownership", async (t) => {
             return this;
         },
     };
-    mockClub.populate = () => ({ lean: async () => mockClub });
+    mockClub.populate = () => ({
+        populate: () => ({ lean: async () => mockClub }),
+    });
 
     Club.findById = (id) => (id === clubId ? mockClub : null);
     Club.findOne = async () => null;

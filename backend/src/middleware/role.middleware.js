@@ -1,5 +1,8 @@
 export const isFacultyRole = (role) => role === "faculty" || role === "admin";
 
+export const isClubOrganizerRole = (role) =>
+    role === "club_head" || role === "co_head";
+
 export const authorizeRoles = (...allowedRoles) => {
     return (req, res, next) => {
         try {

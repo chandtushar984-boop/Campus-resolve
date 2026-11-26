@@ -12,6 +12,7 @@ const ADMIN_EMAIL = "admin@krmu.edu.in";
 const DEMO_OPTIONS = [
     { role: "student", label: "Demo Student", icon: Users },
     { role: "club_head", label: "Demo Club Head", icon: UserCheck },
+    { role: "co_head", label: "Demo Co-Head", icon: UserCheck },
     { role: "faculty", label: "Demo Faculty", icon: Shield },
 ];
 
@@ -188,7 +189,7 @@ const Login = () => {
                         <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center mb-3">
                             Quick Demo Access
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {DEMO_OPTIONS.map((item) => {
                                 const Icon = item.icon;
                                 const busy = demoLoadingRole === item.role;

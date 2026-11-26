@@ -48,6 +48,7 @@ const FacultyDashboard = () => {
     const { user } = useContext(AuthContext);
     const [issues, setIssues] = useState([]);
     const [clubsCount, setClubsCount] = useState(0);
+    const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -58,8 +59,12 @@ const FacultyDashboard = () => {
 
     useEffect(() => {
         let isMounted = true;
-        Promise.allSettled([api.get("/issues"), api.get("/clubs")])
-            .then(([issuesRes, clubsRes]) => {
+        Promise.allSettled([
+            api.get("/issues"),
+            api.get("/clubs"),
+            api.get("/events/manage"),
+        ])
+            .then(([issuesRes, clubsRes, eventsRes]) => {
                 if (!isMounted) return;
                 if (issuesRes.status === "fulfilled") {
                     setIssues(issuesRes.value.data.issues || []);
@@ -73,6 +78,9 @@ const FacultyDashboard = () => {
 
                 if (clubsRes.status === "fulfilled") {
                     setClubsCount((clubsRes.value.data.clubs || []).length);
+                }
+                if (eventsRes.status === "fulfilled") {
+                    setEvents(eventsRes.value.data.events || []);
                 }
             })
             .finally(() => {
@@ -108,11 +116,13 @@ const FacultyDashboard = () => {
     }, [issues, search, statusFilter, priorityFilter, sortOrder]);
 
     const openIssuesCount = issues.filter((i) => i.status === "Open").length;
+    const pendingApprovalsCount = events.filter((e) => e.approvalStatus === "Pending").length;
+    const approvedEventsCount = events.filter((e) => e.approvalStatus === "Approved").length;
 
     const approvalStats = [
         {
             label: "Pending Approvals",
-            value: 0,
+            value: isLoading ? "—" : pendingApprovalsCount,
             hint: "Event requests awaiting review",
             icon: CheckSquare,
             to: "/faculty/approvals",
@@ -126,7 +136,7 @@ const FacultyDashboard = () => {
         },
         {
             label: "Scheduled Events",
-            value: 0,
+            value: isLoading ? "—" : approvedEventsCount,
             hint: "Approved university events",
             icon: CalendarDays,
             to: "/faculty/events",

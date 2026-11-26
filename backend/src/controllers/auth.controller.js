@@ -4,7 +4,7 @@ import User from "../models/user.model.js";
 
 const STUDENT_EMAIL_REGEX = /^\d{10}@krmu\.edu\.in$/;
 const ROLL_NO_REGEX = /^\d{10}$/;
-const DEMO_ROLES = ["student", "club_head", "faculty"];
+const DEMO_ROLES = ["student", "club_head", "co_head", "faculty"];
 
 const sanitizeUser = (user) => ({
     _id: user._id,
@@ -240,7 +240,7 @@ const getMe = async (req, res) => {
 const listAssignableStudents = async (req, res) => {
     try {
         const students = await User.find({
-            role: { $in: ["student", "club_head"] },
+            role: { $in: ["student", "club_head", "co_head"] },
         })
             .select("name email rollNo course semester role managedClub")
             .sort({ name: 1 });

@@ -1,0 +1,81 @@
+import express from "express";
+import {
+    approveEvent,
+    cancelEvent,
+    createEvent,
+    getEventById,
+    getManagedEvents,
+    getMyClubEvents,
+    getPublicEvents,
+    rejectEvent,
+    updateEvent,
+    uploadPoster,
+} from "../controllers/event.controller.js";
+import { auth } from "../middleware/auth.middleware.js";
+import { authorizeRoles } from "../middleware/role.middleware.js";
+
+const router = express.Router();
+
+// Poster upload (Club Head, Co-Head, Faculty)
+router.post(
+    "/upload-poster",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    uploadPoster
+);
+
+// Public approved event discovery (authenticated users)
+router.get("/", auth, getPublicEvents);
+
+// Organizer & Faculty management listings (must precede /:id)
+router.get(
+    "/my-club",
+    auth,
+    authorizeRoles("club_head", "co_head"),
+    getMyClubEvents
+);
+router.get(
+    "/manage",
+    auth,
+    authorizeRoles("faculty", "admin"),
+    getManagedEvents
+);
+
+// Create event (Club Head or Co-Head only)
+router.post(
+    "/",
+    auth,
+    authorizeRoles("club_head", "co_head"),
+    createEvent
+);
+
+// Single event & updates
+router.get("/:id", auth, getEventById);
+router.put(
+    "/:id",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    updateEvent
+);
+router.patch(
+    "/:id/cancel",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    cancelEvent
+);
+
+// Faculty approval actions
+router.patch(
+    "/:id/approve",
+    auth,
+    authorizeRoles("faculty", "admin"),
+    approveEvent
+);
+router.patch(
+    "/:id/reject",
+    auth,
+    authorizeRoles("faculty", "admin"),
+    rejectEvent
+);
+
+export default router;

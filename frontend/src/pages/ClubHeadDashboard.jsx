@@ -17,6 +17,7 @@ const ClubHeadDashboard = () => {
     const clubId = user?.managedClub?._id || user?.managedClub || "";
 
     const [club, setClub] = useState(null);
+    const [events, setEvents] = useState([]);
     const [announcementsCount, setAnnouncementsCount] = useState(0);
     const [isLoading, setIsLoading] = useState(Boolean(clubId));
 
@@ -29,14 +30,18 @@ const ClubHeadDashboard = () => {
         Promise.allSettled([
             api.get(`/clubs/${clubId}`),
             api.get(`/clubs/${clubId}/announcements`),
+            api.get("/events/my-club"),
         ])
-            .then(([clubRes, annRes]) => {
+            .then(([clubRes, annRes, eventsRes]) => {
                 if (!isMounted) return;
                 if (clubRes.status === "fulfilled") {
                     setClub(clubRes.value.data.club || null);
                 }
                 if (annRes.status === "fulfilled") {
                     setAnnouncementsCount((annRes.value.data.announcements || []).length);
+                }
+                if (eventsRes.status === "fulfilled") {
+                    setEvents(eventsRes.value.data.events || []);
                 }
             })
             .finally(() => {
@@ -48,6 +53,9 @@ const ClubHeadDashboard = () => {
         };
     }, [clubId]);
 
+    const approvedEventsCount = events.filter((e) => e.approvalStatus === "Approved").length;
+    const pendingEventsCount = events.filter((e) => e.approvalStatus === "Pending").length;
+
     const clubStats = [
         {
             label: "Club Members",
@@ -57,15 +65,15 @@ const ClubHeadDashboard = () => {
             to: "/club-head/my-club",
         },
         {
-            label: "Active Events",
-            value: 0,
-            hint: "Published & upcoming",
+            label: "Approved Events",
+            value: isLoading ? "—" : approvedEventsCount,
+            hint: `${events.length} total created`,
             icon: CalendarRange,
             to: "/club-head/events",
         },
         {
             label: "Pending Approvals",
-            value: 0,
+            value: isLoading ? "—" : pendingEventsCount,
             hint: "Awaiting faculty review",
             icon: Clock,
             to: "/club-head/events",

@@ -1,11 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import {
     BarChart3,
-    CalendarDays,
-    CalendarRange,
-    CheckSquare,
     ClipboardList,
-    Compass,
     Ticket,
 } from "lucide-react";
 
@@ -20,6 +16,10 @@ import ClubsDirectory from "./pages/ClubsDirectory.jsx";
 import ClubDetails from "./pages/ClubDetails.jsx";
 import MyClubs from "./pages/MyClubs.jsx";
 import ClubAnnouncements from "./pages/ClubAnnouncements.jsx";
+import ExploreEvents from "./pages/ExploreEvents.jsx";
+import EventDetails from "./pages/EventDetails.jsx";
+import ManageEvents from "./pages/ManageEvents.jsx";
+import EventApprovals from "./pages/EventApprovals.jsx";
 import PortalSection from "./pages/PortalSection.jsx";
 import CreateIssue from "./pages/CreateIssue.jsx";
 import MyIssues from "./pages/MyIssues.jsx";
@@ -89,13 +89,15 @@ function App() {
                     path="/student/events"
                     element={
                         <ProtectedShell allowedRole="student">
-                            <PortalSection
-                                title="Explore Events"
-                                subtitle="Discover upcoming workshops, seminars, fests, and club activities."
-                                emptyTitle="No published events yet"
-                                emptyDescription="Approved campus events will appear here once clubs publish them."
-                                icon={Compass}
-                            />
+                            <ExploreEvents />
+                        </ProtectedShell>
+                    }
+                />
+                <Route
+                    path="/events/:id"
+                    element={
+                        <ProtectedShell allowedRoles={["student", "club_head", "co_head", "faculty", "admin"]}>
+                            <EventDetails />
                         </ProtectedShell>
                     }
                 />
@@ -162,11 +164,11 @@ function App() {
                     }
                 />
 
-                {/* Club Head Routes */}
+                {/* Club Head & Co-Head Routes */}
                 <Route
                     path="/club-head/dashboard"
                     element={
-                        <ProtectedShell allowedRole="club_head">
+                        <ProtectedShell allowedRoles={["club_head", "co_head"]}>
                             <ClubHeadDashboard />
                         </ProtectedShell>
                     }
@@ -174,7 +176,7 @@ function App() {
                 <Route
                     path="/club-head/my-club"
                     element={
-                        <ProtectedShell allowedRole="club_head">
+                        <ProtectedShell allowedRoles={["club_head", "co_head"]}>
                             <ClubDetails />
                         </ProtectedShell>
                     }
@@ -182,21 +184,15 @@ function App() {
                 <Route
                     path="/club-head/events"
                     element={
-                        <ProtectedShell allowedRole="club_head">
-                            <PortalSection
-                                title="Manage Events"
-                                subtitle="Create, schedule, and track approval status of your club events."
-                                emptyTitle="No club events yet"
-                                emptyDescription="Events organized by your club will be managed from this page."
-                                icon={CalendarRange}
-                            />
+                        <ProtectedShell allowedRoles={["club_head", "co_head"]}>
+                            <ManageEvents />
                         </ProtectedShell>
                     }
                 />
                 <Route
                     path="/club-head/registrations"
                     element={
-                        <ProtectedShell allowedRole="club_head">
+                        <ProtectedShell allowedRoles={["club_head", "co_head"]}>
                             <PortalSection
                                 title="Registrations"
                                 subtitle="View student registrations and attendance for your club events."
@@ -210,7 +206,7 @@ function App() {
                 <Route
                     path="/club-head/announcements"
                     element={
-                        <ProtectedShell allowedRole="club_head">
+                        <ProtectedShell allowedRoles={["club_head", "co_head"]}>
                             <ClubAnnouncements />
                         </ProtectedShell>
                     }
@@ -229,13 +225,7 @@ function App() {
                     path="/faculty/approvals"
                     element={
                         <ProtectedShell allowedRoles={["faculty", "admin"]}>
-                            <PortalSection
-                                title="Event Approvals"
-                                subtitle="Review and approve event proposals submitted by club heads."
-                                emptyTitle="No pending event approvals"
-                                emptyDescription="Event proposals awaiting faculty review will appear here."
-                                icon={CheckSquare}
-                            />
+                            <EventApprovals />
                         </ProtectedShell>
                     }
                 />
@@ -259,13 +249,7 @@ function App() {
                     path="/faculty/events"
                     element={
                         <ProtectedShell allowedRoles={["faculty", "admin"]}>
-                            <PortalSection
-                                title="Events"
-                                subtitle="Monitor all scheduled, ongoing, and completed campus events."
-                                emptyTitle="No campus events scheduled"
-                                emptyDescription="Approved and scheduled university events will appear here."
-                                icon={CalendarDays}
-                            />
+                            <ExploreEvents />
                         </ProtectedShell>
                     }
                 />
