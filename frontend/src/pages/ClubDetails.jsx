@@ -56,9 +56,11 @@ const ClubDetails = () => {
         logo: "",
     });
 
-    // Assign head state (Faculty only)
+    // Assign head & co-head state (Faculty only)
     const [selectedHeadId, setSelectedHeadId] = useState("");
     const [assigningHead, setAssigningHead] = useState(false);
+    const [selectedCoHeadId, setSelectedCoHeadId] = useState("");
+    const [assigningCoHead, setAssigningCoHead] = useState(false);
 
     // Join/leave state
     const [membershipBusy, setMembershipBusy] = useState(false);
@@ -74,9 +76,9 @@ const ClubDetails = () => {
 
     const canManageThisClub =
         isFaculty ||
-        (role === "club_head" &&
-            club?.clubHead?._id &&
-            club.clubHead._id === user?._id);
+        ((role === "club_head" || role === "co_head") &&
+            ((club?.clubHead?._id && club.clubHead._id === user?._id) ||
+                (club?.coHead?._id && club.coHead._id === user?._id)));
 
     const loadClubData = useCallback(async () => {
         if (!clubId) {
@@ -100,6 +102,7 @@ const ClubDetails = () => {
                 logo: loadedClub.logo || "",
             });
             setSelectedHeadId(loadedClub.clubHead?._id || "");
+            setSelectedCoHeadId(loadedClub.coHead?._id || "");
             setError("");
 
             try {
@@ -173,14 +176,10 @@ const ClubDetails = () => {
 
     const handleAssignHead = async (e) => {
         e.preventDefault();
-        if (!selectedHeadId) {
-            Toast.fire({ icon: "error", title: "Select a student first." });
-            return;
-        }
         setAssigningHead(true);
         try {
             const res = await api.patch(`/clubs/${club._id}/assign-head`, {
-                userId: selectedHeadId,
+                userId: selectedHeadId || null,
             });
             Toast.fire({ icon: "success", title: res.data.message });
             await loadClubData();
@@ -191,6 +190,25 @@ const ClubDetails = () => {
             });
         } finally {
             setAssigningHead(false);
+        }
+    };
+
+    const handleAssignCoHead = async (e) => {
+        e.preventDefault();
+        setAssigningCoHead(true);
+        try {
+            const res = await api.patch(`/clubs/${club._id}/assign-co-head`, {
+                userId: selectedCoHeadId || null,
+            });
+            Toast.fire({ icon: "success", title: res.data.message });
+            await loadClubData();
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title: err.response?.data?.message || "Failed to assign Co-Head.",
+            });
+        } finally {
+            setAssigningCoHead(false);
         }
     };
 
@@ -333,6 +351,10 @@ const ClubDetails = () => {
                                     <UserCheck className="w-4 h-4" />
                                     Club Head: {club.clubHead?.name || "Unassigned"}
                                 </span>
+                                <span className="inline-flex items-center gap-1.5 font-medium">
+                                    <UserCheck className="w-4 h-4" />
+                                    Co-Head: {club.coHead?.name || "Unassigned"}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -466,42 +488,79 @@ const ClubDetails = () => {
                     </form>
                 )}
 
-                {/* Faculty: Assign Club Head */}
+                {/* Faculty: Assign Club Head & Co-Head */}
                 {isFaculty && (
-                    <form
-                        onSubmit={handleAssignHead}
-                        className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-end gap-3"
-                    >
-                        <div className="flex-1">
-                            <label htmlFor="assign-head-select" className="form-label">
-                                Assign Student as Club Head
-                            </label>
-                            <select
-                                id="assign-head-select"
-                                value={selectedHeadId}
-                                onChange={(e) => setSelectedHeadId(e.target.value)}
-                                className="form-input"
-                            >
-                                <option value="">Select a student...</option>
-                                {students.map((s) => (
-                                    <option key={s._id} value={s._id}>
-                                        {s.name} ({s.rollNo || s.email})
-                                        {s.managedClub && s.managedClub !== club._id
-                                            ? " — Managing another club"
-                                            : ""}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={assigningHead || !selectedHeadId}
-                            className="btn-primary shrink-0 disabled:opacity-60"
+                    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <form
+                            onSubmit={handleAssignHead}
+                            className="flex flex-col sm:flex-row sm:items-end gap-3"
                         >
-                            <UserCheck className="w-4 h-4" />
-                            {assigningHead ? "Assigning..." : "Assign Club Head"}
-                        </button>
-                    </form>
+                            <div className="flex-1">
+                                <label htmlFor="assign-head-select" className="form-label">
+                                    Club Head Assignment
+                                </label>
+                                <select
+                                    id="assign-head-select"
+                                    value={selectedHeadId}
+                                    onChange={(e) => setSelectedHeadId(e.target.value)}
+                                    className="form-input"
+                                >
+                                    <option value="">Unassigned (Remove Head)</option>
+                                    {students.map((s) => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} ({s.rollNo || s.email})
+                                            {s.managedClub && s.managedClub !== club._id
+                                                ? " — Managing another club"
+                                                : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={assigningHead}
+                                className="btn-primary shrink-0 disabled:opacity-60"
+                            >
+                                <UserCheck className="w-4 h-4" />
+                                {assigningHead ? "Saving..." : "Save Head"}
+                            </button>
+                        </form>
+
+                        <form
+                            onSubmit={handleAssignCoHead}
+                            className="flex flex-col sm:flex-row sm:items-end gap-3"
+                        >
+                            <div className="flex-1">
+                                <label htmlFor="assign-cohead-select" className="form-label">
+                                    Co-Head Assignment
+                                </label>
+                                <select
+                                    id="assign-cohead-select"
+                                    value={selectedCoHeadId}
+                                    onChange={(e) => setSelectedCoHeadId(e.target.value)}
+                                    className="form-input"
+                                >
+                                    <option value="">Unassigned (Remove Co-Head)</option>
+                                    {students.map((s) => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} ({s.rollNo || s.email})
+                                            {s.managedClub && s.managedClub !== club._id
+                                                ? " — Managing another club"
+                                                : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={assigningCoHead}
+                                className="btn-secondary shrink-0 disabled:opacity-60"
+                            >
+                                <UserCheck className="w-4 h-4" />
+                                {assigningCoHead ? "Saving..." : "Save Co-Head"}
+                            </button>
+                        </form>
+                    </div>
                 )}
             </section>
 
@@ -698,10 +757,16 @@ const ClubDetails = () => {
                                         className={`px-2 py-0.5 text-[11px] font-semibold rounded-full shrink-0 ${
                                             m.role === "head"
                                                 ? "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300"
-                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                                                : m.role === "co_head"
+                                                  ? "bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300"
+                                                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
                                         }`}
                                     >
-                                        {m.role === "head" ? "Head" : "Member"}
+                                        {m.role === "head"
+                                            ? "Head"
+                                            : m.role === "co_head"
+                                              ? "Co-Head"
+                                              : "Member"}
                                     </span>
                                 </li>
                             ))}

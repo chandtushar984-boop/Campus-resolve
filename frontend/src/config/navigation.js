@@ -19,6 +19,9 @@ export const normalizeRole = (role) => {
     if (role === "club_head" || role === "club-head" || role === "clubHead") {
         return "club_head";
     }
+    if (role === "co_head" || role === "co-head" || role === "coHead") {
+        return "co_head";
+    }
     return "student";
 };
 
@@ -26,15 +29,26 @@ export const getRoleLabel = (role) => {
     const normalized = normalizeRole(role);
     if (normalized === "faculty") return "Faculty";
     if (normalized === "club_head") return "Club Head";
+    if (normalized === "co_head") return "Co-Head";
     return "Student";
 };
 
 export const getDashboardPath = (role) => {
     const normalized = normalizeRole(role);
     if (normalized === "faculty") return "/faculty/dashboard";
-    if (normalized === "club_head") return "/club-head/dashboard";
+    if (normalized === "club_head" || normalized === "co_head") {
+        return "/club-head/dashboard";
+    }
     return "/student/dashboard";
 };
+
+const clubOrganizerNav = [
+    { label: "Dashboard", path: "/club-head/dashboard", icon: LayoutDashboard },
+    { label: "My Club", path: "/club-head/my-club", icon: Building2 },
+    { label: "Manage Events", path: "/club-head/events", icon: CalendarRange },
+    { label: "Registrations", path: "/club-head/registrations", icon: ClipboardList },
+    { label: "Announcements", path: "/club-head/announcements", icon: Megaphone },
+];
 
 export const ROLE_NAVIGATION = {
     student: [
@@ -44,13 +58,8 @@ export const ROLE_NAVIGATION = {
         { label: "My Clubs", path: "/student/my-clubs", icon: BookmarkCheck },
         { label: "My Tickets", path: "/student/my-tickets", icon: Ticket },
     ],
-    club_head: [
-        { label: "Dashboard", path: "/club-head/dashboard", icon: LayoutDashboard },
-        { label: "My Club", path: "/club-head/my-club", icon: Building2 },
-        { label: "Manage Events", path: "/club-head/events", icon: CalendarRange },
-        { label: "Registrations", path: "/club-head/registrations", icon: ClipboardList },
-        { label: "Announcements", path: "/club-head/announcements", icon: Megaphone },
-    ],
+    club_head: clubOrganizerNav,
+    co_head: clubOrganizerNav,
     faculty: [
         { label: "Dashboard", path: "/faculty/dashboard", icon: LayoutDashboard },
         { label: "Event Approvals", path: "/faculty/approvals", icon: CheckSquare },
