@@ -5,12 +5,15 @@ const userSchema = new mongoose.Schema(
         name: {
             type: String,
             required: true,
+            trim: true,
         },
 
         email: {
             type: String,
             required: true,
             unique: true,
+            trim: true,
+            lowercase: true,
         },
 
         password: {
@@ -18,28 +21,42 @@ const userSchema = new mongoose.Schema(
             required: true,
         },
 
-        // here will use sparse: true, true allows multiple documents to have null rollNo
+        // sparse: true allows multiple documents without rollNo
         rollNo: {
             type: String,
             sparse: true,
             unique: true,
-
+            trim: true,
         },
 
         course: {
-            type: String
+            type: String,
+            trim: true,
         },
 
         semester: {
             type: String,
+            trim: true,
         },
 
         role: {
             type: String,
-            enum: ["student", "admin"],
+            enum: ["student", "club_head", "faculty", "admin"],
             default: "student",
         },
-    }, { timestamps: true }
+
+        managedClub: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Club",
+            default: null,
+        },
+
+        isDemo: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);

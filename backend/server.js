@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./src/database/db.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import issueRoutes from "./src/routes/issue.routes.js";
+import clubRoutes from "./src/routes/club.routes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 app.use("/api/issues", issueRoutes);
+app.use("/api/clubs", clubRoutes);
 
 const port = process.env.PORT || 4000;
 

@@ -1,12 +1,19 @@
 import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { GraduationCap, Shield, UserCheck, Users } from "lucide-react";
 import api from "../services/api.js";
 import { AuthContext } from "../context/AuthContext.jsx";
-
+import { getDashboardPath } from "../config/navigation.js";
 import { Toast } from "../utils/toast.js";
 
 const STUDENT_EMAIL_REGEX = /^\d{10}@krmu\.edu\.in$/;
 const ADMIN_EMAIL = "admin@krmu.edu.in";
+
+const DEMO_OPTIONS = [
+    { role: "student", label: "Demo Student", icon: Users },
+    { role: "club_head", label: "Demo Club Head", icon: UserCheck },
+    { role: "faculty", label: "Demo Faculty", icon: Shield },
+];
 
 const Login = () => {
     const navigate = useNavigate();
@@ -15,14 +22,11 @@ const Login = () => {
     const [formData, setFormData] = useState({ email: "", password: "" });
     const [fieldErrors, setFieldErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
+    const [demoLoadingRole, setDemoLoadingRole] = useState("");
 
     useEffect(() => {
         if (token && user) {
-            if (user.role === "admin") {
-                navigate("/admin/dashboard", { replace: true });
-            } else {
-                navigate("/student/dashboard", { replace: true });
-            }
+            navigate(getDashboardPath(user.role), { replace: true });
         }
     }, [token, user, navigate]);
 
@@ -35,13 +39,31 @@ const Login = () => {
         const errors = {};
         const email = formData.email.trim();
 
-        if (email !== ADMIN_EMAIL && !STUDENT_EMAIL_REGEX.test(email)) {
+        if (email !== ADMIN_EMAIL && !STUDENT_EMAIL_REGEX.test(email) && !email.endsWith("@krmu.edu.in")) {
             errors.email =
-                "Enter your student email (10digitrollnumber@krmu.edu.in) or the admin email.";
+                "Enter your university email (@krmu.edu.in).";
+        }
+
+        if (!formData.password) {
+            errors.password = "Password is required.";
         }
 
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
+    };
+
+    const completeLogin = (nextToken, nextUser, message) => {
+        localStorage.setItem("token", nextToken);
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        setToken(nextToken);
+        setUser(nextUser);
+
+        Toast.fire({
+            icon: "success",
+            title: message || "Login successful",
+        });
+
+        navigate(getDashboardPath(nextUser.role));
     };
 
     const handleSubmit = async (e) => {
@@ -51,23 +73,11 @@ const Login = () => {
         setIsLoading(true);
         try {
             const response = await api.post("/auth/login", formData);
-            const { token, user } = response.data;
-
-            localStorage.setItem("token", token);
-            localStorage.setItem("user", JSON.stringify(user));
-            setToken(token);
-            setUser(user);
-
-            Toast.fire({
-                icon: "success",
-                title: "Login successful",
-            });
-
-            if (user.role === "admin") {
-                navigate("/admin/dashboard");
-            } else {
-                navigate("/student/dashboard");
-            }
+            completeLogin(
+                response.data.token,
+                response.data.user,
+                "Login successful"
+            );
         } catch (err) {
             Toast.fire({
                 icon: "error",
@@ -80,42 +90,54 @@ const Login = () => {
         }
     };
 
+    const handleDemoLogin = async (role) => {
+        setDemoLoadingRole(role);
+        try {
+            const response = await api.post("/auth/demo-login", { role });
+            completeLogin(
+                response.data.token,
+                response.data.user,
+                `Signed in as ${response.data.user.name}`
+            );
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title:
+                    err.response?.data?.message ||
+                    "Demo login is unavailable right now.",
+            });
+        } finally {
+            setDemoLoadingRole("");
+        }
+    };
+
     return (
-        <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-slate-50">
+        <div className="min-h-[calc(100vh-130px)] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 py-10">
             <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <div className="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 items-center justify-center shadow-lg mb-4">
-                        <svg
-                            className="w-7 h-7 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2.5}
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                        </svg>
+                <div className="text-center mb-7">
+                    <div className="inline-flex w-12 h-12 rounded-xl bg-indigo-600 items-center justify-center shadow-sm mb-4 text-white">
+                        <GraduationCap className="w-6 h-6" />
                     </div>
-                    <h1 className="text-2xl font-bold text-slate-900">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                         Welcome back
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
                         Sign in to your CampusResolve account
                     </p>
                 </div>
 
-                <div className="card p-8">
+                <div className="card p-6 sm:p-8 space-y-6">
                     <form
                         onSubmit={handleSubmit}
-                        className="space-y-5"
+                        className="space-y-4"
                         noValidate
                     >
                         <div>
-                            <label className="form-label">Email Address</label>
+                            <label htmlFor="login-email" className="form-label">
+                                Email Address
+                            </label>
                             <input
+                                id="login-email"
                                 type="email"
                                 name="email"
                                 placeholder="2301010001@krmu.edu.in"
@@ -125,15 +147,18 @@ const Login = () => {
                                 required
                             />
                             {fieldErrors.email && (
-                                <p className="text-xs text-red-500 mt-1">
+                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                                     {fieldErrors.email}
                                 </p>
                             )}
                         </div>
 
                         <div>
-                            <label className="form-label">Password</label>
+                            <label htmlFor="login-password" className="form-label">
+                                Password
+                            </label>
                             <input
+                                id="login-password"
                                 type="password"
                                 name="password"
                                 placeholder="••••••••"
@@ -142,23 +167,55 @@ const Login = () => {
                                 className="form-input"
                                 required
                             />
+                            {fieldErrors.password && (
+                                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                    {fieldErrors.password}
+                                </p>
+                            )}
                         </div>
 
                         <button
                             type="submit"
-                            disabled={isLoading}
-                            className="btn-primary w-full py-3 text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                            disabled={isLoading || Boolean(demoLoadingRole)}
+                            className="btn-primary w-full py-2.5 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isLoading ? "Signing in..." : "Sign In"}
                         </button>
                     </form>
+
+                    {/* Demo Login */}
+                    <div className="pt-5 border-t border-slate-200 dark:border-slate-800">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 text-center mb-3">
+                            Quick Demo Access
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {DEMO_OPTIONS.map((item) => {
+                                const Icon = item.icon;
+                                const busy = demoLoadingRole === item.role;
+                                return (
+                                    <button
+                                        key={item.role}
+                                        type="button"
+                                        onClick={() => handleDemoLogin(item.role)}
+                                        disabled={isLoading || Boolean(demoLoadingRole)}
+                                        className="btn-secondary text-xs px-2.5 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                                        <span className="truncate">
+                                            {busy ? "Signing in..." : item.label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
 
-                <p className="text-center mt-5 text-sm text-slate-500">
+                <p className="text-center mt-5 text-sm text-slate-500 dark:text-slate-400">
                     Don&apos;t have an account?{" "}
                     <Link
                         to="/register"
-                        className="font-semibold text-indigo-600 hover:text-indigo-700"
+                        className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
                     >
                         Register here
                     </Link>

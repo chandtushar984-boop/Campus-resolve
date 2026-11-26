@@ -1,25 +1,16 @@
 import { useContext, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { GraduationCap, Menu, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
-
-const studentLinks = [
-    { label: "Dashboard", path: "/student/dashboard" },
-    { label: "Create Issue", path: "/student/create-issue" },
-    { label: "My Issues", path: "/student/my-issues" },
-];
-
-const adminLinks = [
-    { label: "Dashboard", path: "/admin/dashboard" },
-    { label: "Manage Issues", path: "/admin/dashboard#issues" },
-];
+import { getDashboardPath } from "../config/navigation";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
     const { user, token, logout } = useContext(AuthContext);
-    const location = useLocation();
     const navigate = useNavigate();
     const [mobileOpen, setMobileOpen] = useState(false);
 
-    const links = user?.role === "admin" ? adminLinks : studentLinks;
+    const dashboardPath = getDashboardPath(user?.role);
 
     const handleLogout = () => {
         setMobileOpen(false);
@@ -27,129 +18,124 @@ const Navbar = () => {
         navigate("/login");
     };
 
-    const isActive = (path) => {
-        if (path.includes("#")) {
-            return location.pathname + location.hash === path;
-        }
-        return location.pathname === path && !location.hash;
-    };
-
     return (
-        <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-                {/* Logo */}
-                <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 no-underline shrink-0">
-
-                    <span className="font-bold text-slate-900 text-lg">
-                        Campus<span className="text-indigo-600">Resolve</span>
+        <nav className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+                <Link
+                    to="/"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2.5 no-underline shrink-0"
+                >
+                    <span className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                        <GraduationCap className="w-4 h-4" />
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white text-lg tracking-tight">
+                        Campus<span className="text-indigo-600 dark:text-indigo-400">Resolve</span>
                     </span>
                 </Link>
 
-                {token && user ? (
-                    <>
-                        {/* Desktop Nav Links */}
-                        <div className="hidden md:flex items-center gap-6 flex-1 justify-center">
-                            {links.map(({ label, path }) => (
-                                <Link
-                                    key={label}
-                                    to={path}
-                                    className={`text-sm font-medium transition-colors no-underline ${
-                                        isActive(path) ? "text-indigo-600" : "text-slate-600 hover:text-indigo-600"
-                                    }`}
-                                >
-                                    {label}
-                                </Link>
-                            ))}
-                        </div>
-
-                        {/* Desktop Right Side */}
-                        <div className="hidden md:flex items-center gap-5 shrink-0">
-                            <div className="flex items-center gap-3 border-r border-slate-200 pr-5">
-                                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
-                                    <span className="text-white text-xs font-bold">
-                                        {user?.name?.charAt(0)?.toUpperCase()}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-semibold text-slate-800 leading-tight">{user?.name}</p>
-                                    <p className="text-xs text-slate-500 capitalize leading-tight">{user?.role}</p>
-                                </div>
-                            </div>
+                {/* Desktop Right Controls */}
+                <div className="hidden sm:flex items-center gap-3">
+                    <ThemeToggle />
+                    {token && user ? (
+                        <>
+                            <Link
+                                to={dashboardPath}
+                                className="btn-primary no-underline"
+                            >
+                                Go to Dashboard
+                            </Link>
                             <button
+                                type="button"
                                 onClick={handleLogout}
-                                className="text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+                                className="btn-secondary"
                             >
                                 Logout
                             </button>
-                        </div>
+                        </>
+                    ) : (
+                        <>
+                            <Link
+                                to="/"
+                                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors no-underline"
+                            >
+                                Home
+                            </Link>
+                            <Link
+                                to="/login"
+                                className="btn-secondary no-underline"
+                            >
+                                Login
+                            </Link>
+                            <Link
+                                to="/register"
+                                className="btn-primary no-underline"
+                            >
+                                Register
+                            </Link>
+                        </>
+                    )}
+                </div>
 
-                        {/* Mobile Toggle */}
-                        <button
-                            onClick={() => setMobileOpen(!mobileOpen)}
-                            className="md:hidden w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-50 shrink-0"
-                            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                        >
-                            {mobileOpen ? (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            ) : (
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
-                            )}
-                        </button>
-                    </>
-                ) : (
-                    /* Guest Links */
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <Link to="/" className="hidden sm:block px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors no-underline">
-                            Home
-                        </Link>
-                        <Link to="/login" className="px-3 sm:px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors no-underline">
-                            Login
-                        </Link>
-                        <Link to="/register" className="btn-primary text-sm no-underline px-4 py-2 rounded-lg">
-                            Register
-                        </Link>
-                    </div>
-                )}
+                {/* Mobile Controls */}
+                <div className="flex sm:hidden items-center gap-2">
+                    <ThemeToggle />
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen((prev) => !prev)}
+                        className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 cursor-pointer"
+                        aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                    >
+                        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
             </div>
 
-            {/* Mobile Menu */}
-            {token && user && mobileOpen && (
-                <div className="md:hidden border-t border-slate-100 bg-white px-4 py-3 space-y-2">
-                    <div className="flex items-center gap-3 px-2 pb-3 mb-2 border-b border-slate-100">
-                        <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
-                            <span className="text-white text-sm font-bold">
-                                {user?.name?.charAt(0)?.toUpperCase()}
-                            </span>
-                        </div>
-                        <div>
-                            <p className="text-sm font-semibold text-slate-800">{user?.name}</p>
-                            <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
-                        </div>
-                    </div>
-                    
-                    {links.map(({ label, path }) => (
-                        <Link
-                            key={label}
-                            to={path}
-                            onClick={() => setMobileOpen(false)}
-                            className={`block px-3 py-2.5 rounded-lg text-sm font-medium no-underline transition-colors ${
-                                isActive(path) ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50"
-                            }`}
-                        >
-                            {label}
-                        </Link>
-                    ))}
-                    
-                    <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-3 py-2.5 mt-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                        Logout
-                    </button>
+            {/* Mobile Dropdown */}
+            {mobileOpen && (
+                <div className="sm:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 space-y-2">
+                    {token && user ? (
+                        <>
+                            <Link
+                                to={dashboardPath}
+                                onClick={() => setMobileOpen(false)}
+                                className="btn-primary w-full no-underline"
+                            >
+                                Go to Dashboard
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="btn-secondary w-full"
+                            >
+                                Logout
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link
+                                to="/"
+                                onClick={() => setMobileOpen(false)}
+                                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 no-underline"
+                            >
+                                Home
+                            </Link>
+                            <Link
+                                to="/login"
+                                onClick={() => setMobileOpen(false)}
+                                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 no-underline"
+                            >
+                                Login
+                            </Link>
+                            <Link
+                                to="/register"
+                                onClick={() => setMobileOpen(false)}
+                                className="btn-primary w-full no-underline"
+                            >
+                                Register
+                            </Link>
+                        </>
+                    )}
                 </div>
             )}
         </nav>
