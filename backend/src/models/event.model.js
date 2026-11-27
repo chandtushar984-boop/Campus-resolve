@@ -62,6 +62,11 @@ const eventSchema = new mongoose.Schema(
             required: true,
             min: 1,
         },
+        registeredCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
         club: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Club",

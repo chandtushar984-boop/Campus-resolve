@@ -468,6 +468,13 @@ const updateEvent = async (req, res) => {
             });
         }
 
+        if (validation.data.seatCapacity < (event.registeredCount || 0)) {
+            return res.status(400).json({
+                success: false,
+                message: `Seat capacity cannot be less than current registered count (${event.registeredCount}).`,
+            });
+        }
+
         Object.assign(event, validation.data);
 
         // Organizer edits require fresh faculty review if previously rejected/approved
@@ -674,6 +681,7 @@ const cancelEvent = async (req, res) => {
 };
 
 export {
+    canManageEvent,
     uploadPoster,
     createEvent,
     getPublicEvents,

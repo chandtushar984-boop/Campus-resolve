@@ -11,6 +11,13 @@ import {
     updateEvent,
     uploadPoster,
 } from "../controllers/event.controller.js";
+import {
+    getEventRegistrations,
+    getMyRegistrationForEvent,
+    markAttendance,
+    registerForEvent,
+    verifyTicket,
+} from "../controllers/registration.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 
@@ -76,6 +83,38 @@ router.patch(
     auth,
     authorizeRoles("faculty", "admin"),
     rejectEvent
+);
+
+// Event registration, ticketing & attendance
+router.get(
+    "/:id/my-registration",
+    auth,
+    authorizeRoles("student"),
+    getMyRegistrationForEvent
+);
+router.post(
+    "/:id/register",
+    auth,
+    authorizeRoles("student"),
+    registerForEvent
+);
+router.get(
+    "/:id/registrations",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    getEventRegistrations
+);
+router.post(
+    "/:id/verify-ticket",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    verifyTicket
+);
+router.patch(
+    "/:id/registrations/:registrationId/attendance",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    markAttendance
 );
 
 export default router;
