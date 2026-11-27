@@ -8,6 +8,7 @@ import {
     CheckCircle2,
     Clock,
     MapPin,
+    Ticket,
     Users,
     XCircle,
 } from "lucide-react";
@@ -46,8 +47,10 @@ const EventDetails = () => {
     const { user } = useContext(AuthContext);
     const role = normalizeRole(user?.role);
     const isFaculty = role === "faculty";
+    const isStudent = role === "student";
 
     const [event, setEvent] = useState(null);
+    const [myRegistration, setMyRegistration] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [actionBusy, setActionBusy] = useState(false);
@@ -59,13 +62,21 @@ const EventDetails = () => {
         try {
             const res = await api.get(`/events/${id}`);
             setEvent(res.data.event);
+            if (isStudent) {
+                try {
+                    const regRes = await api.get(`/events/${id}/my-registration`);
+                    setMyRegistration(regRes.data.registration || null);
+                } catch {
+                    setMyRegistration(null);
+                }
+            }
             setError("");
         } catch (err) {
             setError(err.response?.data?.message || "Failed to load event details.");
         } finally {
             setIsLoading(false);
         }
-    }, [id]);
+    }, [id, isStudent]);
 
     useEffect(() => {
         loadEvent();
@@ -106,6 +117,45 @@ const EventDetails = () => {
             Toast.fire({
                 icon: "error",
                 title: err.response?.data?.message || "Failed to reject event.",
+            });
+        } finally {
+            setActionBusy(false);
+        }
+    };
+
+    const handleRegister = async () => {
+        setActionBusy(true);
+        try {
+            const res = await api.post(`/events/${id}/register`);
+            Toast.fire({
+                icon: "success",
+                title: res.data.message || "Registered successfully!",
+            });
+            await loadEvent();
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title: err.response?.data?.message || "Registration failed.",
+            });
+        } finally {
+            setActionBusy(false);
+        }
+    };
+
+    const handleCancelRegistration = async () => {
+        if (!myRegistration?._id) return;
+        setActionBusy(true);
+        try {
+            const res = await api.patch(`/registrations/${myRegistration._id}/cancel`);
+            Toast.fire({
+                icon: "success",
+                title: res.data.message || "Registration cancelled",
+            });
+            await loadEvent();
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title: err.response?.data?.message || "Failed to cancel registration.",
             });
         } finally {
             setActionBusy(false);
@@ -173,6 +223,76 @@ const EventDetails = () => {
                                 </span>
                             </p>
                         </div>
+
+                        {isStudent && event.approvalStatus === "Approved" && (() => {
+                            const now = new Date();
+                            const isFull = (event.registeredCount || 0) >= event.seatCapacity;
+                            const isEnded = now > new Date(event.endDateTime);
+                            const isDeadlinePassed = now > new Date(event.registrationDeadline);
+                            const canCancel =
+                                myRegistration &&
+                                myRegistration.attendanceStatus !== "Attended" &&
+                                now < new Date(event.startDateTime);
+
+                            if (myRegistration) {
+                                return (
+                                    <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                                        <Link
+                                            to="/student/my-tickets"
+                                            className="btn-primary text-xs no-underline"
+                                        >
+                                            <Ticket className="w-4 h-4" />
+                                            View Ticket ({myRegistration.ticketCode})
+                                        </Link>
+                                        {canCancel && (
+                                            <button
+                                                type="button"
+                                                disabled={actionBusy}
+                                                onClick={handleCancelRegistration}
+                                                className="btn-danger text-xs disabled:opacity-60"
+                                            >
+                                                <XCircle className="w-4 h-4" />
+                                                Cancel Registration
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            if (isEnded) {
+                                return (
+                                    <span className="badge badge-low shrink-0">
+                                        Event Ended
+                                    </span>
+                                );
+                            }
+                            if (isDeadlinePassed) {
+                                return (
+                                    <span className="badge badge-rejected shrink-0">
+                                        Registration Closed
+                                    </span>
+                                );
+                            }
+                            if (isFull) {
+                                return (
+                                    <span className="badge badge-rejected shrink-0">
+                                        Seats Full
+                                    </span>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    type="button"
+                                    disabled={actionBusy}
+                                    onClick={handleRegister}
+                                    className="btn-primary text-xs shrink-0 disabled:opacity-60"
+                                >
+                                    <Ticket className="w-4 h-4" />
+                                    {actionBusy ? "Registering..." : "Register for Event"}
+                                </button>
+                            );
+                        })()}
 
                         {isFaculty && event.approvalStatus !== "Cancelled" && (
                             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
@@ -279,7 +399,7 @@ const EventDetails = () => {
                                 Seat Capacity
                             </p>
                             <p className="text-sm font-medium text-slate-900 dark:text-white mt-1">
-                                {event.seatCapacity} seats
+                                {event.registeredCount || 0} / {event.seatCapacity} Seats Filled
                             </p>
                         </div>
                     </div>

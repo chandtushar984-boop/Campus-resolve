@@ -199,7 +199,9 @@ const ExploreEvents = () => {
                                             </p>
                                             <p className="flex items-center gap-1.5">
                                                 <Users className="w-3.5 h-3.5 shrink-0" />
-                                                <span>Capacity: {event.seatCapacity} seats</span>
+                                                <span>
+                                                    {event.registeredCount || 0} / {event.seatCapacity} Seats Filled
+                                                </span>
                                             </p>
                                         </div>
                                     </div>

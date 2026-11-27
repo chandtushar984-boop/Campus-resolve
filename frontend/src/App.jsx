@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import {
     BarChart3,
-    ClipboardList,
-    Ticket,
 } from "lucide-react";
 
 import Landing from "./pages/Landing.jsx";
@@ -20,6 +18,8 @@ import ExploreEvents from "./pages/ExploreEvents.jsx";
 import EventDetails from "./pages/EventDetails.jsx";
 import ManageEvents from "./pages/ManageEvents.jsx";
 import EventApprovals from "./pages/EventApprovals.jsx";
+import MyTickets from "./pages/MyTickets.jsx";
+import EventRegistrations from "./pages/EventRegistrations.jsx";
 import PortalSection from "./pages/PortalSection.jsx";
 import CreateIssue from "./pages/CreateIssue.jsx";
 import MyIssues from "./pages/MyIssues.jsx";
@@ -129,13 +129,7 @@ function App() {
                     path="/student/my-tickets"
                     element={
                         <ProtectedShell allowedRole="student">
-                            <PortalSection
-                                title="My Tickets"
-                                subtitle="View your event registrations and entry passes."
-                                emptyTitle="No event tickets yet"
-                                emptyDescription="Tickets for events you register for will appear here."
-                                icon={Ticket}
-                            />
+                            <MyTickets />
                         </ProtectedShell>
                     }
                 />
@@ -193,13 +187,7 @@ function App() {
                     path="/club-head/registrations"
                     element={
                         <ProtectedShell allowedRoles={["club_head", "co_head"]}>
-                            <PortalSection
-                                title="Registrations"
-                                subtitle="View student registrations and attendance for your club events."
-                                emptyTitle="No registrations yet"
-                                emptyDescription="Student registrations for your club events will appear here."
-                                icon={ClipboardList}
-                            />
+                            <EventRegistrations />
                         </ProtectedShell>
                     }
                 />
@@ -250,6 +238,14 @@ function App() {
                     element={
                         <ProtectedShell allowedRoles={["faculty", "admin"]}>
                             <ExploreEvents />
+                        </ProtectedShell>
+                    }
+                />
+                <Route
+                    path="/faculty/registrations"
+                    element={
+                        <ProtectedShell allowedRoles={["faculty", "admin"]}>
+                            <EventRegistrations />
                         </ProtectedShell>
                     }
                 />
