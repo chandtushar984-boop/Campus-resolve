@@ -65,6 +65,7 @@ export const ROLE_NAVIGATION = {
         { label: "Event Approvals", path: "/faculty/approvals", icon: CheckSquare },
         { label: "Clubs & Organizers", path: "/faculty/clubs", icon: Building2 },
         { label: "Events", path: "/faculty/events", icon: CalendarDays },
+        { label: "Registrations", path: "/faculty/registrations", icon: ClipboardList },
         { label: "Analytics", path: "/faculty/analytics", icon: BarChart3 },
     ],
 };
