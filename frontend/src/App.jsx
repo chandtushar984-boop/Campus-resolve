@@ -30,9 +30,9 @@ import Footer from "./components/Footer.jsx";
 import Navbar from "./components/Navbar.jsx";
 
 const PublicLayout = ({ children }) => (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex flex-col bg-[#faf9f7] dark:bg-[#0e0f14]">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pt-16">{children}</main>
         <Footer />
     </div>
 );
