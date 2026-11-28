@@ -4,6 +4,7 @@ import { GraduationCap, Menu, X } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { getDashboardPath } from "../config/navigation";
 import ThemeToggle from "./ThemeToggle";
+import LogoutConfirmDialog from "./LogoutConfirmDialog";
 
 const PUBLIC_NAV_LINKS = [
     { label: "Home", path: "/" },
@@ -22,6 +23,8 @@ const Navbar = () => {
     const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const dashboardPath = getDashboardPath(user?.role);
     const isAuthenticated = Boolean(token && user);
@@ -39,7 +42,16 @@ const Navbar = () => {
 
     const handleLogout = () => {
         setMobileOpen(false);
+        setShowLogoutDialog(true);
+    };
+
+    const handleConfirmLogout = () => {
+        if (isLoggingOut) return;
+        setIsLoggingOut(true);
+        setShowLogoutDialog(false);
+        setMobileOpen(false);
         logout();
+        setIsLoggingOut(false);
         navigate("/login");
     };
 
@@ -254,6 +266,13 @@ const Navbar = () => {
                     )}
                 </div>
             )}
+
+            <LogoutConfirmDialog
+                isOpen={showLogoutDialog}
+                isBusy={isLoggingOut}
+                onCancel={() => setShowLogoutDialog(false)}
+                onConfirm={handleConfirmLogout}
+            />
         </header>
     );
 };

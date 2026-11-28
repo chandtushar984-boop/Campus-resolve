@@ -12,12 +12,15 @@ import {
 import ThemeToggle from "./ThemeToggle";
 import NotificationBell from "./NotificationBell";
 import Footer from "./Footer";
+import LogoutConfirmDialog from "./LogoutConfirmDialog";
 
 const AppShell = ({ children }) => {
     const { user, logout } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifLoading, setNotifLoading] = useState(false);
@@ -81,8 +84,16 @@ const AppShell = ({ children }) => {
     }, [location.pathname]);
 
     const handleLogout = () => {
+        setShowLogoutDialog(true);
+    };
+
+    const handleConfirmLogout = () => {
+        if (isLoggingOut) return;
+        setIsLoggingOut(true);
+        setShowLogoutDialog(false);
         setSidebarOpen(false);
         logout();
+        setIsLoggingOut(false);
         navigate("/login");
     };
 
@@ -250,6 +261,13 @@ const AppShell = ({ children }) => {
 
                 <Footer />
             </div>
+
+            <LogoutConfirmDialog
+                isOpen={showLogoutDialog}
+                isBusy={isLoggingOut}
+                onCancel={() => setShowLogoutDialog(false)}
+                onConfirm={handleConfirmLogout}
+            />
         </div>
     );
 };
