@@ -147,7 +147,7 @@ Create `backend/.env`:
 
 ```env
 MONGO_URI=your_mongodb_connection_string
-PORT=4000
+PORT=5000
 JWT_SECRET=your_jwt_secret
 FRONTEND_URL=http://localhost:5173
 
@@ -167,7 +167,7 @@ SMTP_SECURE=false
 Create `frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:4000/api
+VITE_API_URL=http://localhost:5000/api
 ```
 
 ## Running the Application
