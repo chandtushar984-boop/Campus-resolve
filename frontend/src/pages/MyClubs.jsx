@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowRight, BookmarkCheck, Compass, Users } from "lucide-react";
+import { AlertCircle, ArrowRight, BookmarkCheck, Compass, Star, Users } from "lucide-react";
 import api from "../services/api";
 import Loader from "../components/Loader";
 import { Toast } from "../utils/toast";
@@ -120,6 +120,12 @@ const MyClubs = () => {
                                         <Users className="w-3.5 h-3.5" />
                                         {club.memberCount} {club.memberCount === 1 ? "member" : "members"}
                                     </span>
+                                    {club.reviewCount > 0 && (
+                                        <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                            {club.averageRating} ({club.reviewCount})
+                                        </span>
+                                    )}
                                     <span>
                                         Joined{" "}
                                         {new Date(club.joinedAt).toLocaleDateString("en-IN", {

@@ -6,6 +6,7 @@ import {
     Building2,
     Plus,
     Search,
+    Star,
     Users,
     X,
 } from "lucide-react";
@@ -351,6 +352,12 @@ const ClubsDirectory = () => {
                                         <Users className="w-3.5 h-3.5" />
                                         {club.memberCount} {club.memberCount === 1 ? "member" : "members"}
                                     </span>
+                                    {club.reviewCount > 0 && (
+                                        <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                            {club.averageRating} ({club.reviewCount})
+                                        </span>
+                                    )}
                                     <span className="truncate max-w-[160px]">
                                         Head: {club.clubHead?.name || "Unassigned"}
                                     </span>
