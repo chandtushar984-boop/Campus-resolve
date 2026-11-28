@@ -79,8 +79,8 @@ const Navbar = () => {
                 aria-label="Primary navigation"
                 className={`mx-auto transition-all duration-300 motion-reduce:transition-none backdrop-blur-md ${
                     isScrolled
-                        ? "max-w-5xl rounded-full border border-stone-200/90 dark:border-zinc-700/80 bg-white/90 dark:bg-[#171820]/90 shadow-lg shadow-zinc-950/8 dark:shadow-black/35 px-4 sm:px-5"
-                        : "w-full rounded-none border-b border-stone-200/80 dark:border-zinc-800/80 bg-[#faf9f7]/95 dark:bg-[#0e0f14]/95 px-4 sm:px-6"
+                        ? "max-w-5xl rounded-full border border-[#DCD7CE] dark:border-zinc-700/80 bg-[#FAF9F6]/90 dark:bg-[#171820]/90 shadow-lg shadow-zinc-900/8 dark:shadow-black/35 px-4 sm:px-5"
+                        : "w-full rounded-none border-b border-[#DCD7CE] dark:border-zinc-800/80 bg-[#FAF9F6]/92 dark:bg-[#0e0f14]/95 shadow-xs shadow-zinc-900/5 px-4 sm:px-6"
                 }`}
             >
                 <div
@@ -122,8 +122,8 @@ const Navbar = () => {
                                         onClick={() => handleNavItemClick(item)}
                                         className={`px-3 py-1.5 rounded-full text-xs xl:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#6d5bd0] ${
                                             active
-                                                ? "bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]"
-                                                : "text-zinc-600 dark:text-zinc-300 hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] hover:bg-stone-100/80 dark:hover:bg-zinc-800/70"
+                                                ? "bg-[#6d5bd0]/12 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]"
+                                                : "text-[#27272A] dark:text-zinc-300 hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] hover:bg-[#EAE7E1]/80 dark:hover:bg-zinc-800/70"
                                         }`}
                                     >
                                         {item.label}
@@ -156,9 +156,9 @@ const Navbar = () => {
                             <>
                                 <Link
                                     to="/login"
-                                    className={`px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors no-underline ${
+                                    className={`px-3.5 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#27272A] dark:text-zinc-200 hover:bg-[#EAE7E1] dark:hover:bg-zinc-800 transition-colors no-underline ${
                                         location.pathname === "/login"
-                                            ? "bg-stone-100 dark:bg-zinc-800"
+                                            ? "bg-[#EAE7E1] dark:bg-zinc-800"
                                             : ""
                                     }`}
                                 >
@@ -197,7 +197,7 @@ const Navbar = () => {
             {/* Mobile / Tablet Drawer */}
             {mobileOpen && (
                 <div
-                    className={`lg:hidden mx-auto mt-2 rounded-2xl border border-stone-200 dark:border-zinc-800 bg-white/95 dark:bg-[#171820]/95 backdrop-blur-md shadow-xl px-4 py-3 space-y-1.5 ${
+                    className={`lg:hidden mx-auto mt-2 rounded-2xl border border-[#DCD7CE] dark:border-zinc-800 bg-[#FAF9F6]/95 dark:bg-[#171820]/95 backdrop-blur-md shadow-xl px-4 py-3 space-y-1.5 ${
                         isScrolled ? "max-w-5xl" : "max-w-7xl mx-3 sm:mx-6"
                     }`}
                 >

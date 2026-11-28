@@ -14,8 +14,8 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: #faf9f7;
-    color: #18181b;
+    background-color: #F3F1ED;
+    color: #1F1F23;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -68,17 +68,17 @@
     gap: 0.5rem;
     min-height: 2.625rem;
     padding: 0.5rem 1.125rem;
-    background-color: #ffffff;
-    color: #334155;
+    background-color: #FAF9F6;
+    color: #27272A;
     font-size: 0.875rem;
     font-weight: 600;
     border-radius: 0.5rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #D6D1C7;
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease;
   }
   .btn-secondary:hover:not(:disabled) {
-    background-color: #f1f5f9;
+    background-color: #EAE7E1;
   }
   .dark .btn-secondary {
     background-color: #1e293b;
@@ -196,10 +196,10 @@
 
   /* ── Card ──────────────────────────────────────────────── */
   .card {
-    background-color: #ffffff;
+    background-color: #FAF9F6;
     border-radius: 0.75rem;
-    border: 1px solid #e7e5e4;
-    box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+    border: 1px solid #DCD7CE;
+    box-shadow: 0 1px 2px rgba(31, 31, 35, 0.04);
   }
   .dark .card {
     background-color: #171820;

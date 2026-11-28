@@ -136,11 +136,11 @@ const Landing = () => {
         : "/clubs";
 
     return (
-        <div className="bg-[#faf9f7] dark:bg-[#0e0f14] text-zinc-900 dark:text-zinc-100">
+        <div className="bg-[#F3F1ED] dark:bg-[#0e0f14] text-[#1F1F23] dark:text-zinc-100">
             {/* 1. Split Hero Section */}
             <section
                 id="hero"
-                className="relative overflow-hidden border-b border-stone-200/80 dark:border-zinc-800/80 scroll-mt-20"
+                className="relative overflow-hidden border-b border-[#DCD7CE] dark:border-zinc-800/80 scroll-mt-20"
             >
                 <div
                     aria-hidden="true"
@@ -198,7 +198,7 @@ const Landing = () => {
 
                         {/* Campus Image Right (Below text on mobile) */}
                         <div className="lg:col-span-6 order-2">
-                            <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-white dark:bg-[#171820] shadow-xl shadow-zinc-900/10 dark:shadow-black/40">
+                            <div className="relative rounded-2xl overflow-hidden border border-[#DCD7CE] dark:border-zinc-800 bg-[#FAF9F6] dark:bg-[#171820] shadow-xl shadow-zinc-900/10 dark:shadow-black/40">
                                 <div className="aspect-[16/10] w-full">
                                     <img
                                         src={campusHeroImg}
@@ -206,7 +206,7 @@ const Landing = () => {
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <div className="hidden sm:flex items-center justify-between gap-3 px-4 py-3 bg-white/90 dark:bg-[#171820]/90 backdrop-blur-md border-t border-stone-200/80 dark:border-zinc-800/80">
+                                <div className="hidden sm:flex items-center justify-between gap-3 px-4 py-3 bg-[#FAF9F6]/92 dark:bg-[#171820]/90 backdrop-blur-md border-t border-[#DCD7CE] dark:border-zinc-800/80">
                                     <div className="flex items-center gap-2 min-w-0">
                                         <MapPin className="w-4 h-4 text-[#6d5bd0] dark:text-[#a78bfa] shrink-0" />
                                         <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
@@ -263,7 +263,7 @@ const Landing = () => {
             {/* 3. Featured Clubs */}
             <section
                 id="clubs"
-                className="bg-white dark:bg-[#13141b] border-y border-stone-200/80 dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
+                className="bg-[#EAE7E1] dark:bg-[#13141b] border-y border-[#DCD7CE] dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
@@ -455,7 +455,7 @@ const Landing = () => {
             {/* 5. How CampusResolve Works & Role Workspaces */}
             <section
                 id="activities"
-                className="bg-white dark:bg-[#13141b] border-y border-stone-200/80 dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
+                className="bg-[#EAE7E1] dark:bg-[#13141b] border-y border-[#DCD7CE] dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-14">
                     <div>
@@ -471,10 +471,10 @@ const Landing = () => {
                             {steps.map((item) => {
                                 const Icon = item.icon;
                                 return (
-                                    <div
-                                        key={item.step}
-                                        className="p-6 rounded-xl border border-stone-200 dark:border-zinc-800 bg-[#faf9f7] dark:bg-[#171820]"
-                                    >
+                                <div
+                                    key={item.step}
+                                    className="p-6 rounded-xl border border-[#DCD7CE] dark:border-zinc-800 bg-[#FAF9F6] dark:bg-[#171820]"
+                                >
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="text-xs font-bold tracking-wider text-[#6d5bd0] dark:text-[#a78bfa]">
                                                 STEP {item.step}
@@ -506,10 +506,10 @@ const Landing = () => {
                             {roles.map((r) => {
                                 const Icon = r.icon;
                                 return (
-                                    <div
-                                        key={r.name}
-                                        className="p-6 rounded-xl border border-stone-200 dark:border-zinc-800 bg-[#faf9f7] dark:bg-[#171820]"
-                                    >
+                                <div
+                                    key={r.name}
+                                    className="p-6 rounded-xl border border-[#DCD7CE] dark:border-zinc-800 bg-[#FAF9F6] dark:bg-[#171820]"
+                                >
                                         <div className="flex items-center gap-3 mb-3">
                                             <span className="w-9 h-9 rounded-lg bg-[#6d5bd0] text-white flex items-center justify-center shrink-0">
                                                 <Icon className="w-4 h-4" />
@@ -534,7 +534,7 @@ const Landing = () => {
                 id="contact"
                 className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
             >
-                <div className="card p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-[#171820]">
+                <div className="card p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[#FAF9F6] dark:bg-[#171820]">
                     <div className="space-y-2 max-w-xl">
                         <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa]">
                             Get Connected

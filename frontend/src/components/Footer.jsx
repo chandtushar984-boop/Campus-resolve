@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
     return (
-        <footer className="bg-white dark:bg-[#13141b] border-t border-stone-200 dark:border-zinc-800 mt-auto">
+        <footer className="bg-[#FAF9F6] dark:bg-[#13141b] border-t border-[#DCD7CE] dark:border-zinc-800 mt-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
                 <div className="space-y-1">
-                    <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                    <span className="text-sm font-semibold text-[#1F1F23] dark:text-zinc-100">
                         Campus
                         <span className="text-[#6d5bd0] dark:text-[#a78bfa]">
                             Resolve
