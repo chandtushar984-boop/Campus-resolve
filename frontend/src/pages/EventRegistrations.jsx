@@ -4,6 +4,7 @@ import {
     AlertCircle,
     CheckCircle2,
     ClipboardList,
+    Download,
     QrCode,
     Users,
     XCircle,
@@ -40,6 +41,7 @@ const EventRegistrations = () => {
     const [verifying, setVerifying] = useState(false);
     const [verifyFeedback, setVerifyFeedback] = useState(null);
     const [busyRegId, setBusyRegId] = useState("");
+    const [exportingCsv, setExportingCsv] = useState(false);
 
     useEffect(() => {
         const loadEvents = async () => {
@@ -161,6 +163,37 @@ const EventRegistrations = () => {
         }
     };
 
+    const handleExportCsv = async () => {
+        if (!selectedEventId) return;
+        setExportingCsv(true);
+        try {
+            const res = await api.get(`/events/${selectedEventId}/export-csv`, {
+                responseType: "blob",
+            });
+            const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute(
+                "download",
+                `event-${selectedEventId}-registrations.csv`
+            );
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title:
+                    err.response?.data?.message ||
+                    "Failed to export registrations CSV.",
+            });
+        } finally {
+            setExportingCsv(false);
+        }
+    };
+
     if (isLoadingEvents) return <Loader label="Loading events..." />;
 
     return (
@@ -174,11 +207,11 @@ const EventRegistrations = () => {
                 </div>
 
                 {events.length > 0 && (
-                    <div className="w-full sm:w-80">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                         <select
                             value={selectedEventId}
                             onChange={(e) => handleEventChange(e.target.value)}
-                            className="form-input"
+                            className="form-input w-full sm:w-72"
                             aria-label="Select event"
                         >
                             {events.map((ev) => (
@@ -188,6 +221,15 @@ const EventRegistrations = () => {
                                 </option>
                             ))}
                         </select>
+                        <button
+                            type="button"
+                            disabled={!selectedEventId || exportingCsv}
+                            onClick={handleExportCsv}
+                            className="btn-secondary text-xs shrink-0 disabled:opacity-60"
+                        >
+                            <Download className="w-4 h-4" />
+                            {exportingCsv ? "Exporting..." : "Export CSV"}
+                        </button>
                     </div>
                 )}
             </div>

@@ -12,6 +12,7 @@ import {
     uploadPoster,
 } from "../controllers/event.controller.js";
 import {
+    exportEventRegistrationsCsv,
     getEventRegistrations,
     getMyRegistrationForEvent,
     markAttendance,
@@ -107,6 +108,12 @@ router.get(
     auth,
     authorizeRoles("club_head", "co_head", "faculty", "admin"),
     getEventRegistrations
+);
+router.get(
+    "/:id/export-csv",
+    auth,
+    authorizeRoles("club_head", "co_head", "faculty", "admin"),
+    exportEventRegistrationsCsv
 );
 router.post(
     "/:id/verify-ticket",

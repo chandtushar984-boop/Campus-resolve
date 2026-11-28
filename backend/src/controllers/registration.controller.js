@@ -578,6 +578,89 @@ const markAttendance = async (req, res) => {
     }
 };
 
+const escapeCsvField = (value) => {
+    let str = value === null || value === undefined ? "" : String(value);
+    if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+};
+
+const exportEventRegistrationsCsv = async (req, res) => {
+    try {
+        const { id: eventId } = req.params;
+        if (!isValidObjectId(eventId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid event ID.",
+            });
+        }
+
+        const event = await Event.findById(eventId)
+            .populate("club", "name clubHead coHead")
+            .lean();
+
+        if (!event) {
+            return res.status(404).json({
+                success: false,
+                message: "Event not found.",
+            });
+        }
+
+        if (!canManageEvent(event.club, req.user)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. You can only export registrations for your assigned club's events.",
+            });
+        }
+
+        const registrations = await EventRegistration.find({
+            event: eventId,
+            status: "Registered",
+        })
+            .populate("student", "name email rollNo")
+            .sort({ registeredAt: 1 })
+            .lean();
+
+        const headers = [
+            "Student Name",
+            "University Email",
+            "Roll Number",
+            "Registration Date",
+            "Attendance Status",
+        ];
+
+        const rows = registrations.map((reg) => {
+            const regDate = reg.registeredAt
+                ? new Date(reg.registeredAt).toISOString()
+                : "";
+            return [
+                escapeCsvField(reg.student?.name || ""),
+                escapeCsvField(reg.student?.email || ""),
+                escapeCsvField(reg.student?.rollNo || ""),
+                escapeCsvField(regDate),
+                escapeCsvField(reg.attendanceStatus || "Registered"),
+            ].join(",");
+        });
+
+        const csvContent = [headers.map(escapeCsvField).join(","), ...rows].join(
+            "\r\n"
+        );
+
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="event-${eventId}-registrations.csv"`
+        );
+        return res.status(200).send(csvContent);
+    } catch {
+        return res.status(500).json({
+            success: false,
+            message: "Failed to export registrations CSV.",
+        });
+    }
+};
+
 export {
     getMyRegistrationForEvent,
     registerForEvent,
@@ -586,4 +669,6 @@ export {
     getEventRegistrations,
     verifyTicket,
     markAttendance,
+    escapeCsvField,
+    exportEventRegistrationsCsv,
 };
