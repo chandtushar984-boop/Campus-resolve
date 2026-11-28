@@ -4,6 +4,8 @@ import ClubMembership from "../models/clubMembership.model.js";
 import ClubAnnouncement from "../models/clubAnnouncement.model.js";
 import User from "../models/user.model.js";
 import { isClubOrganizerRole, isFacultyRole } from "../middleware/role.middleware.js";
+import { getClubRatingsMap } from "./review.controller.js";
+import { createNotificationsForUsers } from "../services/notification.service.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -95,7 +97,7 @@ const getAllClubs = async (req, res) => {
 
         const clubIds = clubs.map((c) => c._id);
 
-        const [counts, userMemberships] = await Promise.all([
+        const [counts, userMemberships, ratingsMap] = await Promise.all([
             ClubMembership.aggregate([
                 { $match: { club: { $in: clubIds } } },
                 { $group: { _id: "$club", count: { $sum: 1 } } },
@@ -106,16 +108,22 @@ const getAllClubs = async (req, res) => {
             })
                 .select("club")
                 .lean(),
+            getClubRatingsMap(clubIds.map((id) => id.toString())),
         ]);
 
         const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
         const memberSet = new Set(userMemberships.map((m) => m.club.toString()));
 
-        const enriched = clubs.map((club) => ({
-            ...club,
-            memberCount: countMap.get(club._id.toString()) || 0,
-            isMember: memberSet.has(club._id.toString()),
-        }));
+        const enriched = clubs.map((club) => {
+            const rating = ratingsMap.get(club._id.toString());
+            return {
+                ...club,
+                memberCount: countMap.get(club._id.toString()) || 0,
+                isMember: memberSet.has(club._id.toString()),
+                averageRating: rating ? rating.averageRating : null,
+                reviewCount: rating ? rating.reviewCount : 0,
+            };
+        });
 
         return res.status(200).json({
             success: true,
@@ -145,19 +153,27 @@ const getMyClubs = async (req, res) => {
         const validMemberships = memberships.filter((m) => m.club && m.club.isActive);
         const clubIds = validMemberships.map((m) => m.club._id);
 
-        const counts = await ClubMembership.aggregate([
-            { $match: { club: { $in: clubIds } } },
-            { $group: { _id: "$club", count: { $sum: 1 } } },
+        const [counts, ratingsMap] = await Promise.all([
+            ClubMembership.aggregate([
+                { $match: { club: { $in: clubIds } } },
+                { $group: { _id: "$club", count: { $sum: 1 } } },
+            ]),
+            getClubRatingsMap(clubIds.map((id) => id.toString())),
         ]);
         const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
 
-        const clubs = validMemberships.map((m) => ({
-            ...m.club,
-            memberCount: countMap.get(m.club._id.toString()) || 0,
-            isMember: true,
-            membershipRole: m.role,
-            joinedAt: m.joinedAt,
-        }));
+        const clubs = validMemberships.map((m) => {
+            const rating = ratingsMap.get(m.club._id.toString());
+            return {
+                ...m.club,
+                memberCount: countMap.get(m.club._id.toString()) || 0,
+                isMember: true,
+                membershipRole: m.role,
+                joinedAt: m.joinedAt,
+                averageRating: rating ? rating.averageRating : null,
+                reviewCount: rating ? rating.reviewCount : 0,
+            };
+        });
 
         return res.status(200).json({
             success: true,
@@ -193,10 +209,12 @@ const getClubById = async (req, res) => {
             });
         }
 
-        const [memberCount, membership] = await Promise.all([
+        const [memberCount, membership, ratingsMap] = await Promise.all([
             ClubMembership.countDocuments({ club: id }),
             ClubMembership.findOne({ club: id, user: req.user.userId }).lean(),
+            getClubRatingsMap([id]),
         ]);
+        const rating = ratingsMap.get(id);
 
         return res.status(200).json({
             success: true,
@@ -205,6 +223,8 @@ const getClubById = async (req, res) => {
                 memberCount,
                 isMember: Boolean(membership),
                 membershipRole: membership?.role || null,
+                averageRating: rating ? rating.averageRating : null,
+                reviewCount: rating ? rating.reviewCount : 0,
             },
         });
     } catch (error) {
@@ -711,6 +731,30 @@ const createClubAnnouncement = async (req, res) => {
         const populated = await ClubAnnouncement.findById(announcement._id)
             .populate("createdBy", "name role")
             .lean();
+
+        try {
+            if (mongoose.connection.readyState === 1) {
+                const memberships = await ClubMembership.find({ club: id })
+                    .select("user")
+                    .lean();
+                const memberIds = memberships
+                    .map((m) => m.user?.toString())
+                    .filter((uid) => uid && uid !== req.user.userId);
+
+                if (memberIds.length > 0) {
+                    await createNotificationsForUsers(memberIds, {
+                        type: "club_announcement",
+                        title: `New Announcement: ${club.name}`,
+                        message: announcement.title,
+                        link: `/student/clubs/${id}`,
+                        relatedClub: id,
+                        relatedAnnouncement: announcement._id,
+                    });
+                }
+            }
+        } catch {
+            // Notification failure must not undo announcement creation
+        }
 
         return res.status(201).json({
             success: true,

@@ -4,7 +4,10 @@ import Event from "../models/event.model.js";
 import EventRegistration, {
     ATTENDANCE_STATUSES,
 } from "../models/eventRegistration.model.js";
+import User from "../models/user.model.js";
 import { canManageEvent } from "./event.controller.js";
+import { createNotification } from "../services/notification.service.js";
+import { sendRegistrationConfirmationEmail } from "../services/email.service.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -138,6 +141,36 @@ const registerForEvent = async (req, res) => {
                 success: false,
                 message: "Failed to complete event registration.",
             });
+        }
+
+        try {
+            if (mongoose.connection.readyState === 1) {
+                await createNotification({
+                    recipient: req.user.userId,
+                    type: "registration_confirmed",
+                    title: "Registration Confirmed",
+                    message: `You are registered for "${reservedEvent.title || "the event"}". Ticket: ${registration.ticketCode}`,
+                    link: "/student/my-tickets",
+                    relatedEvent: eventId,
+                    relatedClub: reservedEvent.club || null,
+                });
+
+                const student = await User.findById(req.user.userId)
+                    .select("name email")
+                    .lean();
+                if (student?.email) {
+                    await sendRegistrationConfirmationEmail({
+                        to: student.email,
+                        studentName: student.name,
+                        eventTitle: reservedEvent.title || "Campus Event",
+                        venue: reservedEvent.venue || "TBA",
+                        startDateTime: reservedEvent.startDateTime,
+                        ticketCode: registration.ticketCode,
+                    });
+                }
+            }
+        } catch {
+            // Notification/email failure must not undo registration
         }
 
         return res.status(201).json({
