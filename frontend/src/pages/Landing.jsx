@@ -17,6 +17,7 @@ import {
 import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 import { getDashboardPath, normalizeRole } from "../config/navigation";
+import { resolvePosterUrl } from "../utils/posterUrl";
 import campusHeroImg from "../assets/campus-hero.webp";
 
 const highlights = [
@@ -92,15 +93,9 @@ const Landing = () => {
 
     const [clubs, setClubs] = useState([]);
     const [events, setEvents] = useState([]);
-    const [loadingData, setLoadingData] = useState(false);
+    const [loadingData, setLoadingData] = useState(true);
 
     useEffect(() => {
-        if (!isAuthenticated) {
-            setClubs([]);
-            setEvents([]);
-            return;
-        }
-
         let isMounted = true;
         setLoadingData(true);
         Promise.allSettled([
@@ -111,9 +106,13 @@ const Landing = () => {
                 if (!isMounted) return;
                 if (clubsRes.status === "fulfilled") {
                     setClubs((clubsRes.value.data.clubs || []).slice(0, 3));
+                } else {
+                    setClubs([]);
                 }
                 if (eventsRes.status === "fulfilled") {
                     setEvents((eventsRes.value.data.events || []).slice(0, 3));
+                } else {
+                    setEvents([]);
                 }
             })
             .finally(() => {
@@ -123,18 +122,18 @@ const Landing = () => {
         return () => {
             isMounted = false;
         };
-    }, [isAuthenticated]);
+    }, []);
 
     const eventsLink = isAuthenticated
         ? role === "faculty"
             ? "/faculty/events"
             : "/student/events"
-        : "/login";
+        : "/events";
     const clubsLink = isAuthenticated
         ? role === "faculty"
             ? "/faculty/clubs"
             : "/student/clubs"
-        : "/login";
+        : "/clubs";
 
     return (
         <div className="bg-[#faf9f7] dark:bg-[#0e0f14] text-zinc-900 dark:text-zinc-100">
@@ -179,19 +178,19 @@ const Landing = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <a
-                                            href="#events"
+                                        <Link
+                                            to={eventsLink}
                                             className="btn-primary no-underline px-5"
                                         >
                                             Explore Events
                                             <ArrowRight className="w-4 h-4" />
-                                        </a>
-                                        <a
-                                            href="#clubs"
+                                        </Link>
+                                        <Link
+                                            to={clubsLink}
                                             className="btn-secondary no-underline px-5"
                                         >
                                             Discover Clubs
-                                        </a>
+                                        </Link>
                                     </>
                                 )}
                             </div>
@@ -280,7 +279,7 @@ const Landing = () => {
                             to={clubsLink}
                             className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6d5bd0] dark:text-[#a78bfa] hover:underline no-underline"
                         >
-                            {isAuthenticated ? "View All Clubs" : "Sign in to Browse Clubs"}
+                            View All Clubs
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
@@ -290,28 +289,14 @@ const Landing = () => {
                             Loading campus clubs...
                         </div>
                     ) : clubs.length === 0 ? (
-                        <div className="card p-10 text-center space-y-3 bg-[#faf9f7] dark:bg-[#171820]">
+                        <div className="card p-10 text-center space-y-2 bg-[#faf9f7] dark:bg-[#171820]">
                             <Building2 className="w-9 h-9 text-zinc-400 mx-auto" />
                             <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                                {isAuthenticated
-                                    ? "No active clubs available yet"
-                                    : "Sign in to explore active university clubs"}
+                                No active clubs available yet
                             </h3>
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
-                                {isAuthenticated
-                                    ? "Clubs created by faculty coordinators will appear here."
-                                    : "Use your university account or demo login to browse clubs, view member counts, and join communities."}
+                                Active university clubs and student organizations will appear here once published.
                             </p>
-                            {!isAuthenticated && (
-                                <div className="pt-1 flex justify-center gap-3 flex-wrap">
-                                    <Link to="/login" className="btn-primary text-xs no-underline">
-                                        Login
-                                    </Link>
-                                    <Link to="/register" className="btn-secondary text-xs no-underline">
-                                        Register
-                                    </Link>
-                                </div>
-                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -346,9 +331,11 @@ const Landing = () => {
                                         </span>
                                         <Link
                                             to={
-                                                role === "faculty"
-                                                    ? `/faculty/clubs/${club._id}`
-                                                    : `/student/clubs/${club._id}`
+                                                isAuthenticated
+                                                    ? role === "faculty"
+                                                        ? `/faculty/clubs/${club._id}`
+                                                        : `/student/clubs/${club._id}`
+                                                    : `/clubs/${club._id}`
                                             }
                                             className="font-semibold text-[#6d5bd0] dark:text-[#a78bfa] no-underline hover:underline"
                                         >
@@ -380,7 +367,7 @@ const Landing = () => {
                         to={eventsLink}
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6d5bd0] dark:text-[#a78bfa] hover:underline no-underline"
                     >
-                        {isAuthenticated ? "Explore All Events" : "Sign in to View Events"}
+                        Explore All Events
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
@@ -390,74 +377,77 @@ const Landing = () => {
                         Loading upcoming events...
                     </div>
                 ) : events.length === 0 ? (
-                    <div className="card p-10 text-center space-y-3">
+                    <div className="card p-10 text-center space-y-2">
                         <CalendarDays className="w-9 h-9 text-zinc-400 mx-auto" />
                         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                            {isAuthenticated
-                                ? "No upcoming approved events yet"
-                                : "Sign in to view upcoming campus events"}
+                            No upcoming approved events yet
                         </h3>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
-                            {isAuthenticated
-                                ? "Approved events with open registration will appear here."
-                                : "Log in with your student or demo account to see approved events, seat availability, and register for QR passes."}
+                            Approved campus events with open registration will appear here.
                         </p>
-                        {!isAuthenticated && (
-                            <div className="pt-1 flex justify-center gap-3 flex-wrap">
-                                <Link to="/login" className="btn-primary text-xs no-underline">
-                                    Login
-                                </Link>
-                                <Link to="/register" className="btn-secondary text-xs no-underline">
-                                    Register
-                                </Link>
-                            </div>
-                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {events.map((ev) => (
-                            <article
-                                key={ev._id}
-                                className="card p-6 flex flex-col justify-between gap-4"
-                            >
-                                <div className="space-y-2.5">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]">
-                                            {ev.category}
-                                        </span>
-                                        <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                                            {ev.club?.name}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-50 line-clamp-1">
-                                        {ev.title}
-                                    </h3>
-                                    <div className="space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                        <p className="flex items-center gap-1.5">
-                                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                                            <span>{formatDateTime(ev.startDateTime)}</span>
-                                        </p>
-                                        <p className="flex items-center gap-1.5">
-                                            <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                            <span className="truncate">{ev.venue}</span>
-                                        </p>
-                                        <p className="flex items-center gap-1.5">
-                                            <Users className="w-3.5 h-3.5 shrink-0" />
-                                            <span>
-                                                {ev.registeredCount || 0} / {ev.seatCapacity} Seats Filled
-                                            </span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <Link
-                                    to={`/events/${ev._id}`}
-                                    className="btn-secondary text-xs w-full no-underline"
+                        {events.map((ev) => {
+                            const poster = resolvePosterUrl(ev.posterImage);
+                            return (
+                                <article
+                                    key={ev._id}
+                                    className="card overflow-hidden flex flex-col justify-between"
                                 >
-                                    View Event Details
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                </Link>
-                            </article>
-                        ))}
+                                    <div>
+                                        {poster && (
+                                            <img
+                                                src={poster}
+                                                alt={ev.title}
+                                                className="w-full h-40 object-cover border-b border-stone-200 dark:border-zinc-800"
+                                            />
+                                        )}
+                                        <div className="p-6 space-y-2.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]">
+                                                    {ev.category}
+                                                </span>
+                                                <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                                    {ev.club?.name}
+                                                </span>
+                                            </div>
+                                            <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-50 line-clamp-1">
+                                                {ev.title}
+                                            </h3>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
+                                                {ev.description}
+                                            </p>
+                                            <div className="space-y-1 text-xs text-zinc-600 dark:text-zinc-400 pt-1">
+                                                <p className="flex items-center gap-1.5">
+                                                    <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>{formatDateTime(ev.startDateTime)}</span>
+                                                </p>
+                                                <p className="flex items-center gap-1.5">
+                                                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                                    <span className="truncate">{ev.venue}</span>
+                                                </p>
+                                                <p className="flex items-center gap-1.5">
+                                                    <Users className="w-3.5 h-3.5 shrink-0" />
+                                                    <span>
+                                                        {ev.registeredCount || 0} / {ev.seatCapacity} Seats Filled
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="px-6 pb-6">
+                                        <Link
+                                            to={`/events/${ev._id}`}
+                                            className="btn-secondary text-xs w-full no-underline"
+                                        >
+                                            View Event Details
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
+                                    </div>
+                                </article>
+                            );
+                        })}
                     </div>
                 )}
             </section>

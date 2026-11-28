@@ -31,6 +31,18 @@ const Footer = () => {
                         Home
                     </Link>
                     <Link
+                        to="/clubs"
+                        className="hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] no-underline transition-colors"
+                    >
+                        Clubs
+                    </Link>
+                    <Link
+                        to="/events"
+                        className="hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] no-underline transition-colors"
+                    >
+                        Events
+                    </Link>
+                    <Link
                         to="/login"
                         className="hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] no-underline transition-colors"
                     >

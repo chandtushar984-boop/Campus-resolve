@@ -1,4 +1,6 @@
+import { useContext } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthContext } from "./context/AuthContext";
 
 import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
@@ -43,6 +45,14 @@ const ProtectedShell = ({ allowedRole, allowedRoles, children }) => (
     </ProtectedRoute>
 );
 
+const AdaptiveShell = ({ children }) => {
+    const { user, token } = useContext(AuthContext);
+    if (token && user) {
+        return <AppShell>{children}</AppShell>;
+    }
+    return <PublicLayout>{children}</PublicLayout>;
+};
+
 function App() {
     return (
         <BrowserRouter>
@@ -72,6 +82,30 @@ function App() {
                         </PublicLayout>
                     }
                 />
+                <Route
+                    path="/clubs"
+                    element={
+                        <PublicLayout>
+                            <ClubsDirectory />
+                        </PublicLayout>
+                    }
+                />
+                <Route
+                    path="/clubs/:id"
+                    element={
+                        <PublicLayout>
+                            <ClubDetails />
+                        </PublicLayout>
+                    }
+                />
+                <Route
+                    path="/events"
+                    element={
+                        <PublicLayout>
+                            <ExploreEvents />
+                        </PublicLayout>
+                    }
+                />
 
                 {/* Student Routes */}
                 <Route
@@ -93,9 +127,9 @@ function App() {
                 <Route
                     path="/events/:id"
                     element={
-                        <ProtectedShell allowedRoles={["student", "club_head", "co_head", "faculty", "admin"]}>
+                        <AdaptiveShell>
                             <EventDetails />
-                        </ProtectedShell>
+                        </AdaptiveShell>
                     }
                 />
                 <Route

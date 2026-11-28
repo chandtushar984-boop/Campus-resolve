@@ -6,11 +6,11 @@ import { getDashboardPath } from "../config/navigation";
 import ThemeToggle from "./ThemeToggle";
 
 const PUBLIC_NAV_LINKS = [
-    { label: "Home", sectionId: "hero" },
+    { label: "Home", path: "/" },
     { label: "About", sectionId: "about" },
-    { label: "Clubs", sectionId: "clubs" },
-    { label: "Events", sectionId: "events" },
-    { label: "Campus Activities", sectionId: "activities" },
+    { label: "Clubs", path: "/clubs" },
+    { label: "Events", path: "/events" },
+    { label: "Campus Life", sectionId: "activities" },
     { label: "Contact", sectionId: "contact" },
 ];
 
@@ -43,23 +43,31 @@ const Navbar = () => {
         navigate("/login");
     };
 
-    const handleSectionNav = (sectionId) => {
+    const handleNavItemClick = (item) => {
         setMobileOpen(false);
-        if (location.pathname !== "/") {
-            navigate(`/#${sectionId}`);
-            setTimeout(() => {
-                const el = document.getElementById(sectionId);
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-            }, 60);
+        if (item.path) {
+            navigate(item.path);
+            if (item.path === "/") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
             return;
         }
-        const el = document.getElementById(sectionId);
+        if (location.pathname !== "/") {
+            navigate("/");
+            setTimeout(() => {
+                const el = document.getElementById(item.sectionId);
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+            }, 80);
+            return;
+        }
+        const el = document.getElementById(item.sectionId);
         if (el) {
             el.scrollIntoView({ behavior: "smooth" });
-        } else {
-            window.scrollTo({ top: 0, behavior: "smooth" });
         }
     };
+
+    const isItemActive = (item) =>
+        Boolean(item.path && location.pathname === item.path);
 
     return (
         <header
@@ -105,16 +113,23 @@ const Navbar = () => {
                     {/* Desktop Navigation Links */}
                     {!isAuthenticated && (
                         <div className="hidden lg:flex items-center gap-1">
-                            {PUBLIC_NAV_LINKS.map((item) => (
-                                <button
-                                    key={item.sectionId}
-                                    type="button"
-                                    onClick={() => handleSectionNav(item.sectionId)}
-                                    className="px-3 py-1.5 rounded-full text-xs xl:text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] hover:bg-stone-100/80 dark:hover:bg-zinc-800/70 transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#6d5bd0]"
-                                >
-                                    {item.label}
-                                </button>
-                            ))}
+                            {PUBLIC_NAV_LINKS.map((item) => {
+                                const active = isItemActive(item);
+                                return (
+                                    <button
+                                        key={item.label}
+                                        type="button"
+                                        onClick={() => handleNavItemClick(item)}
+                                        className={`px-3 py-1.5 rounded-full text-xs xl:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#6d5bd0] ${
+                                            active
+                                                ? "bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]"
+                                                : "text-zinc-600 dark:text-zinc-300 hover:text-[#6d5bd0] dark:hover:text-[#a78bfa] hover:bg-stone-100/80 dark:hover:bg-zinc-800/70"
+                                        }`}
+                                    >
+                                        {item.label}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 
@@ -207,10 +222,14 @@ const Navbar = () => {
                         <>
                             {PUBLIC_NAV_LINKS.map((item) => (
                                 <button
-                                    key={item.sectionId}
+                                    key={item.label}
                                     type="button"
-                                    onClick={() => handleSectionNav(item.sectionId)}
-                                    className="w-full text-left block px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-stone-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                    onClick={() => handleNavItemClick(item)}
+                                    className={`w-full text-left block px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer ${
+                                        isItemActive(item)
+                                            ? "bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]"
+                                            : "text-zinc-700 dark:text-zinc-200 hover:bg-stone-100 dark:hover:bg-zinc-800"
+                                    }`}
                                 >
                                     {item.label}
                                 </button>

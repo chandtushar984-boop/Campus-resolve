@@ -47,8 +47,9 @@ const EventDetails = () => {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
     const role = normalizeRole(user?.role);
-    const isFaculty = role === "faculty";
-    const isStudent = role === "student";
+    const isFaculty = Boolean(user) && role === "faculty";
+    const isStudent = Boolean(user) && role === "student";
+    const isGuest = !user;
 
     const [event, setEvent] = useState(null);
     const [myRegistration, setMyRegistration] = useState(null);
@@ -279,7 +280,7 @@ const EventDetails = () => {
                             </p>
                         </div>
 
-                        {isStudent && event.approvalStatus === "Approved" && (() => {
+                        {(isStudent || isGuest) && event.approvalStatus === "Approved" && (() => {
                             const now = new Date();
                             const isFull = (event.registeredCount || 0) >= event.seatCapacity;
                             const isEnded = now > new Date(event.endDateTime);
@@ -288,6 +289,46 @@ const EventDetails = () => {
                                 myRegistration &&
                                 myRegistration.attendanceStatus !== "Attended" &&
                                 now < new Date(event.startDateTime);
+
+                            if (isGuest) {
+                                if (isEnded) {
+                                    return (
+                                        <span className="badge badge-low shrink-0">
+                                            Event Ended
+                                        </span>
+                                    );
+                                }
+                                if (isDeadlinePassed) {
+                                    return (
+                                        <span className="badge badge-rejected shrink-0">
+                                            Registration Closed
+                                        </span>
+                                    );
+                                }
+                                if (isFull) {
+                                    return (
+                                        <span className="badge badge-rejected shrink-0">
+                                            Seats Full
+                                        </span>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            Toast.fire({
+                                                icon: "info",
+                                                title: "Please sign in to register for this event.",
+                                            });
+                                            navigate("/login");
+                                        }}
+                                        className="btn-primary text-xs shrink-0"
+                                    >
+                                        <Ticket className="w-4 h-4" />
+                                        Register for Event
+                                    </button>
+                                );
+                            }
 
                             if (myRegistration) {
                                 return (

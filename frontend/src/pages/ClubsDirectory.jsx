@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     AlertCircle,
     ArrowRight,
@@ -28,9 +28,11 @@ const CLUB_CATEGORIES = [
 
 const ClubsDirectory = () => {
     const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
     const role = normalizeRole(user?.role);
-    const isFaculty = role === "faculty";
-    const isStudent = role === "student";
+    const isFaculty = Boolean(user) && role === "faculty";
+    const isStudent = Boolean(user) && role === "student";
+    const isGuest = !user;
 
     const [clubs, setClubs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +72,14 @@ const ClubsDirectory = () => {
     }, [fetchClubs]);
 
     const handleJoinLeave = async (club) => {
+        if (!user) {
+            Toast.fire({
+                icon: "info",
+                title: "Please sign in to join a club.",
+            });
+            navigate("/login");
+            return;
+        }
         setBusyClubId(club._id);
         try {
             if (club.isMember) {
@@ -126,7 +136,11 @@ const ClubsDirectory = () => {
         }
     };
 
-    const detailBasePath = isFaculty ? "/faculty/clubs" : "/student/clubs";
+    const detailBasePath = isFaculty
+        ? "/faculty/clubs"
+        : user
+          ? "/student/clubs"
+          : "/clubs";
 
     return (
         <div className="page-wrapper space-y-6">
@@ -371,7 +385,7 @@ const ClubsDirectory = () => {
                                         View Details
                                         <ArrowRight className="w-3.5 h-3.5" />
                                     </Link>
-                                    {isStudent && (
+                                    {(isStudent || isGuest) && (
                                         <button
                                             type="button"
                                             disabled={busyClubId === club._id}

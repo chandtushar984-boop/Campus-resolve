@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
     AlertCircle,
     ArrowLeft,
@@ -31,10 +31,12 @@ const CLUB_CATEGORIES = [
 
 const ClubDetails = () => {
     const { id: routeClubId } = useParams();
+    const navigate = useNavigate();
     const { user, refreshUser } = useContext(AuthContext);
     const role = normalizeRole(user?.role);
-    const isFaculty = role === "faculty";
-    const isStudent = role === "student";
+    const isFaculty = Boolean(user) && role === "faculty";
+    const isStudent = Boolean(user) && role === "student";
+    const isGuest = !user;
 
     const managedClubId = user?.managedClub?._id || user?.managedClub || "";
     const clubId = routeClubId || managedClubId;
@@ -88,14 +90,9 @@ const ClubDetails = () => {
         }
         setIsLoading(true);
         try {
-            const [clubRes, membersRes] = await Promise.all([
-                api.get(`/clubs/${clubId}`),
-                api.get(`/clubs/${clubId}/members`),
-            ]);
-
+            const clubRes = await api.get(`/clubs/${clubId}`);
             const loadedClub = clubRes.data.club;
             setClub(loadedClub);
-            setMembers(membersRes.data.members || []);
             setEditForm({
                 name: loadedClub.name || "",
                 category: loadedClub.category || "Technical",
@@ -106,27 +103,40 @@ const ClubDetails = () => {
             setSelectedCoHeadId(loadedClub.coHead?._id || "");
             setError("");
 
-            try {
-                const annRes = await api.get(`/clubs/${clubId}/announcements`);
-                setAnnouncements(annRes.data.announcements || []);
-                setAnnouncementsRestricted(false);
-            } catch (annErr) {
-                if (annErr.response?.status === 403) {
-                    setAnnouncements([]);
-                    setAnnouncementsRestricted(true);
+            if (user) {
+                try {
+                    const membersRes = await api.get(`/clubs/${clubId}/members`);
+                    setMembers(membersRes.data.members || []);
+                } catch {
+                    setMembers([]);
                 }
-            }
 
-            if (isFaculty) {
-                const studRes = await api.get("/auth/students");
-                setStudents(studRes.data.students || []);
+                try {
+                    const annRes = await api.get(`/clubs/${clubId}/announcements`);
+                    setAnnouncements(annRes.data.announcements || []);
+                    setAnnouncementsRestricted(false);
+                } catch (annErr) {
+                    if (annErr.response?.status === 403) {
+                        setAnnouncements([]);
+                        setAnnouncementsRestricted(true);
+                    }
+                }
+
+                if (isFaculty) {
+                    const studRes = await api.get("/auth/students");
+                    setStudents(studRes.data.students || []);
+                }
+            } else {
+                setMembers([]);
+                setAnnouncements([]);
+                setAnnouncementsRestricted(true);
             }
         } catch (err) {
             setError(err.response?.data?.message || "Failed to load club details.");
         } finally {
             setIsLoading(false);
         }
-    }, [clubId, isFaculty]);
+    }, [clubId, isFaculty, user]);
 
     useEffect(() => {
         loadClubData();
@@ -134,6 +144,11 @@ const ClubDetails = () => {
 
     const handleJoinLeave = async () => {
         if (!club) return;
+        if (!user) {
+            Toast.fire({ icon: "info", title: "Please sign in to join this club." });
+            navigate("/login");
+            return;
+        }
         setMembershipBusy(true);
         try {
             if (club.isMember) {
@@ -368,7 +383,7 @@ const ClubDetails = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                        {isStudent && (
+                        {(isStudent || isGuest) && (
                             <button
                                 type="button"
                                 disabled={membershipBusy}
