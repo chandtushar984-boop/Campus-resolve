@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
     AlertCircle,
     ArrowRight,
+    Bell,
     BookmarkCheck,
     CalendarDays,
     Compass,
@@ -31,18 +32,31 @@ const getStatusBadgeClass = (status) => {
 const formatDate = (date) =>
     new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 
+const formatDateTime = (date) =>
+    new Date(date).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
 const StudentDashboard = () => {
     const { user } = useContext(AuthContext);
 
     const [issues, setIssues] = useState([]);
     const [myClubs, setMyClubs] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
         let isMounted = true;
-        Promise.allSettled([api.get("/issues/my-issues"), api.get("/clubs/my-clubs")])
-            .then(([issuesRes, clubsRes]) => {
+        Promise.allSettled([
+            api.get("/issues/my-issues"),
+            api.get("/clubs/my-clubs"),
+            api.get("/analytics/student"),
+        ])
+            .then(([issuesRes, clubsRes, analyticsRes]) => {
                 if (!isMounted) return;
                 if (issuesRes.status === "fulfilled") {
                     setIssues(issuesRes.value.data.issues || []);
@@ -60,6 +74,12 @@ const StudentDashboard = () => {
                 } else {
                     setMyClubs([]);
                 }
+
+                if (analyticsRes.status === "fulfilled") {
+                    setAnalytics(analyticsRes.value.data.analytics || null);
+                } else {
+                    setAnalytics(null);
+                }
             })
             .finally(() => {
                 if (isMounted) setIsLoading(false);
@@ -75,10 +95,14 @@ const StudentDashboard = () => {
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 4);
 
+    const upcomingEvents = analytics?.upcomingRegisteredEvents || [];
+    const recentNotifications = analytics?.recentNotifications || [];
+    const activeTicketsCount = analytics?.activeTicketsCount ?? 0;
+
     const summaryCards = [
         {
             label: "Upcoming Events",
-            value: 0,
+            value: isLoading ? "—" : upcomingEvents.length,
             hint: "Registered events",
             icon: CalendarDays,
             to: "/student/events",
@@ -92,8 +116,8 @@ const StudentDashboard = () => {
         },
         {
             label: "My Tickets",
-            value: 0,
-            hint: "Event passes",
+            value: isLoading ? "—" : activeTicketsCount,
+            hint: "Active QR passes",
             icon: Ticket,
             to: "/student/my-tickets",
         },
@@ -125,7 +149,8 @@ const StudentDashboard = () => {
                                 user?.rollNo ? `Roll No: ${user.rollNo}` : null,
                             ]
                                 .filter(Boolean)
-                                .join(" · ") || "Explore campus clubs, events, and your registrations."}
+                                .join(" · ") ||
+                                "Explore campus clubs, events, and your registrations."}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -137,11 +162,11 @@ const StudentDashboard = () => {
                             Explore Events
                         </Link>
                         <Link
-                            to="/student/clubs"
+                            to="/student/my-tickets"
                             className="inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2 rounded-lg bg-indigo-500/40 text-white border border-indigo-300/40 font-semibold text-sm hover:bg-indigo-500/60 transition-colors no-underline"
                         >
-                            <Users className="w-4 h-4" />
-                            Browse Clubs
+                            <Ticket className="w-4 h-4" />
+                            My Tickets
                         </Link>
                     </div>
                 </div>
@@ -190,29 +215,53 @@ const StudentDashboard = () => {
                             </h2>
                         </div>
                         <Link
-                            to="/student/events"
+                            to="/student/my-tickets"
                             className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline no-underline"
                         >
-                            Explore Events
+                            My Tickets
                             <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
 
-                    <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700">
-                        <CalendarDays className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2.5" />
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            No upcoming registered events
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-                            Events you register for will appear here with dates, venues, and ticket access.
-                        </p>
-                        <Link
-                            to="/student/events"
-                            className="btn-secondary mt-4 text-xs no-underline"
-                        >
-                            Find Campus Events
-                        </Link>
-                    </div>
+                    {upcomingEvents.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700">
+                            <CalendarDays className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2.5" />
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                No upcoming registered events
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+                                Events you register for will appear here with dates, venues, and ticket access.
+                            </p>
+                            <Link
+                                to="/student/events"
+                                className="btn-secondary mt-4 text-xs no-underline"
+                            >
+                                Find Campus Events
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-lg overflow-hidden">
+                            {upcomingEvents.slice(0, 4).map((reg) => (
+                                <Link
+                                    key={reg._id}
+                                    to={`/events/${reg.event._id}`}
+                                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors no-underline"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                                            {reg.event.title}
+                                        </p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                            {formatDateTime(reg.event.startDateTime)} · {reg.event.venue}
+                                        </p>
+                                    </div>
+                                    <span className="font-mono text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
+                                        {reg.ticketCode}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {/* Joined Clubs */}
@@ -272,6 +321,55 @@ const StudentDashboard = () => {
                     )}
                 </section>
             </div>
+
+            {/* Recent Notifications */}
+            <section className="card p-6">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5">
+                        <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        <div>
+                            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                                Recent Notifications
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {analytics?.unreadNotificationsCount > 0
+                                    ? `${analytics.unreadNotificationsCount} unread`
+                                    : "Latest event and club updates"}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {recentNotifications.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+                        No notifications yet.
+                    </div>
+                ) : (
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-lg overflow-hidden">
+                        {recentNotifications.map((notif) => (
+                            <Link
+                                key={notif._id}
+                                to={notif.link || "/student/events"}
+                                className={`flex items-center justify-between gap-4 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors no-underline ${
+                                    notif.read ? "" : "bg-indigo-50/40 dark:bg-indigo-950/20"
+                                }`}
+                            >
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                                        {notif.title}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                        {notif.message}
+                                    </p>
+                                </div>
+                                <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                                    {formatDate(notif.createdAt)}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </section>
 
             {/* Existing Campus Issues Section (Live API Data) */}
             <section className="card p-6">

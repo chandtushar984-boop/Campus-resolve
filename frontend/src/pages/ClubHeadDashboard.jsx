@@ -7,6 +7,7 @@ import {
     ClipboardList,
     Clock,
     Megaphone,
+    Star,
     Users,
 } from "lucide-react";
 import api from "../services/api";
@@ -16,8 +17,7 @@ const ClubHeadDashboard = () => {
     const { user } = useContext(AuthContext);
     const clubId = user?.managedClub?._id || user?.managedClub || "";
 
-    const [club, setClub] = useState(null);
-    const [events, setEvents] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [announcementsCount, setAnnouncementsCount] = useState(0);
     const [isLoading, setIsLoading] = useState(Boolean(clubId));
 
@@ -28,20 +28,18 @@ const ClubHeadDashboard = () => {
         }
         let isMounted = true;
         Promise.allSettled([
-            api.get(`/clubs/${clubId}`),
+            api.get("/analytics/club-head"),
             api.get(`/clubs/${clubId}/announcements`),
-            api.get("/events/my-club"),
         ])
-            .then(([clubRes, annRes, eventsRes]) => {
+            .then(([analyticsRes, annRes]) => {
                 if (!isMounted) return;
-                if (clubRes.status === "fulfilled") {
-                    setClub(clubRes.value.data.club || null);
+                if (analyticsRes.status === "fulfilled") {
+                    setAnalytics(analyticsRes.value.data.analytics || null);
                 }
                 if (annRes.status === "fulfilled") {
-                    setAnnouncementsCount((annRes.value.data.announcements || []).length);
-                }
-                if (eventsRes.status === "fulfilled") {
-                    setEvents(eventsRes.value.data.events || []);
+                    setAnnouncementsCount(
+                        (annRes.value.data.announcements || []).length
+                    );
                 }
             })
             .finally(() => {
@@ -53,37 +51,38 @@ const ClubHeadDashboard = () => {
         };
     }, [clubId]);
 
-    const approvedEventsCount = events.filter((e) => e.approvalStatus === "Approved").length;
-    const pendingEventsCount = events.filter((e) => e.approvalStatus === "Pending").length;
+    const club = analytics?.club || null;
+    const eventStats = analytics?.eventStats || [];
+    const clubRating = analytics?.clubRating || { averageRating: null, reviewCount: 0 };
 
     const clubStats = [
         {
             label: "Club Members",
-            value: isLoading ? "—" : club?.memberCount ?? 0,
+            value: isLoading ? "—" : analytics?.memberCount ?? 0,
             hint: club ? club.name : "No club assigned",
             icon: Users,
             to: "/club-head/my-club",
         },
         {
-            label: "Approved Events",
-            value: isLoading ? "—" : approvedEventsCount,
-            hint: `${events.length} total created`,
+            label: "Total Events",
+            value: isLoading ? "—" : analytics?.totalEvents ?? 0,
+            hint: `${analytics?.upcomingEvents ?? 0} upcoming`,
             icon: CalendarRange,
             to: "/club-head/events",
         },
         {
             label: "Pending Approvals",
-            value: isLoading ? "—" : pendingEventsCount,
+            value: isLoading ? "—" : analytics?.pendingApprovalEvents ?? 0,
             hint: "Awaiting faculty review",
             icon: Clock,
             to: "/club-head/events",
         },
         {
-            label: "Announcements",
-            value: isLoading ? "—" : announcementsCount,
-            hint: "Posted to club members",
-            icon: Megaphone,
-            to: "/club-head/announcements",
+            label: "Event Registrations",
+            value: isLoading ? "—" : analytics?.totalRegistrations ?? 0,
+            hint: `${analytics?.totalAttended ?? 0} attended · ${analytics?.totalCapacity ?? 0} seats`,
+            icon: ClipboardList,
+            to: "/club-head/registrations",
         },
     ];
 
@@ -114,11 +113,11 @@ const ClubHeadDashboard = () => {
                             My Club
                         </Link>
                         <Link
-                            to="/club-head/announcements"
+                            to="/club-head/events"
                             className="inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2 rounded-lg bg-indigo-500/40 text-white border border-indigo-300/40 font-semibold text-sm hover:bg-indigo-500/60 transition-colors no-underline"
                         >
-                            <Megaphone className="w-4 h-4" />
-                            Announcements
+                            <CalendarRange className="w-4 h-4" />
+                            Manage Events
                         </Link>
                     </div>
                 </div>
@@ -184,13 +183,20 @@ const ClubHeadDashboard = () => {
                                         {club.name}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        {club.category} · {club.memberCount} members
+                                        {club.category} · {analytics?.memberCount ?? 0} members · {announcementsCount} announcements
                                     </p>
                                 </div>
                             </div>
                             <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-3">
                                 {club.description}
                             </p>
+                            {clubRating.reviewCount > 0 && (
+                                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded-full">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                    Club Rating: {clubRating.averageRating} / 5 ({clubRating.reviewCount}{" "}
+                                    {clubRating.reviewCount === 1 ? "review" : "reviews"})
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700">
@@ -210,7 +216,7 @@ const ClubHeadDashboard = () => {
                         <div className="flex items-center gap-2.5">
                             <CalendarRange className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                                Event Management
+                                Event Registrations &amp; Ratings
                             </h2>
                         </div>
                         <Link
@@ -221,15 +227,46 @@ const ClubHeadDashboard = () => {
                             <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700">
-                        <CalendarRange className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2.5" />
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                            No club events created yet
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-                            Submitted event proposals, approval statuses, and schedules will be managed here.
-                        </p>
-                    </div>
+                    {eventStats.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center py-8 px-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700">
+                            <CalendarRange className="w-8 h-8 text-slate-400 dark:text-slate-500 mb-2.5" />
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                No club events created yet
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+                                Submitted event proposals, registration counts, and ratings will appear here.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-lg overflow-hidden">
+                            {eventStats.slice(0, 4).map((ev) => (
+                                <Link
+                                    key={ev._id}
+                                    to={`/events/${ev._id}`}
+                                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors no-underline"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
+                                            {ev.title}
+                                        </p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            {ev.approvalStatus} · {ev.registeredCount} / {ev.seatCapacity} seats
+                                        </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        {ev.reviewCount > 0 ? (
+                                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                                {ev.averageRating} ({ev.reviewCount})
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-slate-400">No reviews</span>
+                                        )}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </section>
             </div>
 
@@ -245,10 +282,10 @@ const ClubHeadDashboard = () => {
                         </span>
                         <div className="min-w-0">
                             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                                Event Registrations
+                                Event Registrations &amp; CSV Export
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                Review attendee lists and check-ins
+                                Verify QR tickets, mark attendance, and export CSV
                             </p>
                         </div>
                     </div>
