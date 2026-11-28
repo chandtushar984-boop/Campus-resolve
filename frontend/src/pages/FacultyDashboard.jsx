@@ -7,10 +7,11 @@ import {
     Building2,
     CalendarDays,
     CheckSquare,
-    FileText,
+    Users,
 } from "lucide-react";
 import api from "../services/api";
 import Loader from "../components/Loader";
+import AnalyticsCharts from "../components/AnalyticsCharts";
 import { AuthContext } from "../context/AuthContext";
 
 const formatDate = (date) =>
@@ -47,8 +48,7 @@ const getPriorityBadgeClass = (priority) => {
 const FacultyDashboard = () => {
     const { user } = useContext(AuthContext);
     const [issues, setIssues] = useState([]);
-    const [clubsCount, setClubsCount] = useState(0);
-    const [events, setEvents] = useState([]);
+    const [analytics, setAnalytics] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -61,10 +61,9 @@ const FacultyDashboard = () => {
         let isMounted = true;
         Promise.allSettled([
             api.get("/issues"),
-            api.get("/clubs"),
-            api.get("/events/manage"),
+            api.get("/analytics/faculty"),
         ])
-            .then(([issuesRes, clubsRes, eventsRes]) => {
+            .then(([issuesRes, analyticsRes]) => {
                 if (!isMounted) return;
                 if (issuesRes.status === "fulfilled") {
                     setIssues(issuesRes.value.data.issues || []);
@@ -76,11 +75,8 @@ const FacultyDashboard = () => {
                     );
                 }
 
-                if (clubsRes.status === "fulfilled") {
-                    setClubsCount((clubsRes.value.data.clubs || []).length);
-                }
-                if (eventsRes.status === "fulfilled") {
-                    setEvents(eventsRes.value.data.events || []);
+                if (analyticsRes.status === "fulfilled") {
+                    setAnalytics(analyticsRes.value.data.analytics || null);
                 }
             })
             .finally(() => {
@@ -115,11 +111,27 @@ const FacultyDashboard = () => {
         return result;
     }, [issues, search, statusFilter, priorityFilter, sortOrder]);
 
-    const openIssuesCount = issues.filter((i) => i.status === "Open").length;
-    const pendingApprovalsCount = events.filter((e) => e.approvalStatus === "Pending").length;
-    const approvedEventsCount = events.filter((e) => e.approvalStatus === "Approved").length;
+    const summary = analytics?.summary || {};
+    const totalClubs = summary.totalClubs ?? 0;
+    const totalEvents = summary.totalEvents ?? 0;
+    const pendingApprovalsCount = summary.pendingApprovals ?? 0;
+    const totalRegistrations = summary.totalRegistrations ?? 0;
 
     const approvalStats = [
+        {
+            label: "Total Clubs",
+            value: isLoading ? "—" : totalClubs,
+            hint: "Active student organizations",
+            icon: Building2,
+            to: "/faculty/clubs",
+        },
+        {
+            label: "Total Events",
+            value: isLoading ? "—" : totalEvents,
+            hint: "All submitted & approved events",
+            icon: CalendarDays,
+            to: "/faculty/events",
+        },
         {
             label: "Pending Approvals",
             value: isLoading ? "—" : pendingApprovalsCount,
@@ -128,25 +140,11 @@ const FacultyDashboard = () => {
             to: "/faculty/approvals",
         },
         {
-            label: "Active Clubs",
-            value: isLoading ? "—" : clubsCount,
-            hint: "Registered student organizations",
-            icon: Building2,
-            to: "/faculty/clubs",
-        },
-        {
-            label: "Scheduled Events",
-            value: isLoading ? "—" : approvedEventsCount,
-            hint: "Approved university events",
-            icon: CalendarDays,
-            to: "/faculty/events",
-        },
-        {
-            label: "Campus Issues",
-            value: isLoading ? "—" : issues.length,
-            hint: isLoading ? "Loading..." : `${openIssuesCount} open`,
-            icon: FileText,
-            to: "#issues",
+            label: "Total Registrations",
+            value: isLoading ? "—" : totalRegistrations,
+            hint: "Active student event passes",
+            icon: Users,
+            to: "/faculty/analytics",
         },
     ];
 
@@ -260,6 +258,12 @@ const FacultyDashboard = () => {
             </section>
 
             {/* University Overview */}
+            <AnalyticsCharts
+                clubRegistrations={analytics?.clubRegistrations || []}
+                categoryDistribution={analytics?.categoryDistribution || []}
+            />
+
+            {/* University Quick Links */}
             <section className="card p-6">
                 <div className="mb-4">
                     <h2 className="text-base font-semibold text-slate-900 dark:text-white">

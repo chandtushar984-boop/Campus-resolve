@@ -1,7 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import {
-    BarChart3,
-} from "lucide-react";
 
 import Landing from "./pages/Landing.jsx";
 import Login from "./pages/Login.jsx";
@@ -20,7 +17,7 @@ import ManageEvents from "./pages/ManageEvents.jsx";
 import EventApprovals from "./pages/EventApprovals.jsx";
 import MyTickets from "./pages/MyTickets.jsx";
 import EventRegistrations from "./pages/EventRegistrations.jsx";
-import PortalSection from "./pages/PortalSection.jsx";
+import FacultyAnalytics from "./pages/FacultyAnalytics.jsx";
 import CreateIssue from "./pages/CreateIssue.jsx";
 import MyIssues from "./pages/MyIssues.jsx";
 import IssueDetails from "./pages/IssueDetails.jsx";
@@ -253,13 +250,7 @@ function App() {
                     path="/faculty/analytics"
                     element={
                         <ProtectedShell allowedRoles={["faculty", "admin"]}>
-                            <PortalSection
-                                title="Analytics"
-                                subtitle="Track university-wide club participation and event metrics."
-                                emptyTitle="Analytics data not available yet"
-                                emptyDescription="Participation metrics and event trends will appear here once event data is recorded."
-                                icon={BarChart3}
-                            />
+                            <FacultyAnalytics />
                         </ProtectedShell>
                     }
                 />
