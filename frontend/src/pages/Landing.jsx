@@ -1,121 +1,259 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+    ArrowRight,
     Building2,
     CalendarCheck,
+    CalendarDays,
     CheckCircle2,
     Compass,
+    MapPin,
+    QrCode,
     ShieldCheck,
+    Sparkles,
+    Star,
     Users,
 } from "lucide-react";
+import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
-import { getDashboardPath } from "../config/navigation";
+import { getDashboardPath, normalizeRole } from "../config/navigation";
+import campusHeroImg from "../assets/campus-hero.webp";
 
-const features = [
+const highlights = [
     {
         title: "Discover Campus Clubs",
         desc: "Browse technical, cultural, and academic clubs across the university and join communities that match your interests.",
         icon: Users,
     },
     {
-        title: "Event Discovery & Tickets",
-        desc: "Explore approved campus events, register in seconds, and keep your event passes organized in one place.",
+        title: "Event Discovery & QR Passes",
+        desc: "Explore approved campus events, reserve your seat in seconds, and check in smoothly with your QR ticket.",
+        icon: QrCode,
+    },
+    {
+        title: "Faculty-Reviewed Approvals",
+        desc: "Club Heads submit proposals with venue conflict checks while Faculty coordinators oversee campus-wide activities.",
+        icon: ShieldCheck,
+    },
+];
+
+const steps = [
+    {
+        step: "01",
+        title: "Discover & Join",
+        desc: "Explore active university clubs, follow announcements, and connect with student-led communities.",
+        icon: Compass,
+    },
+    {
+        step: "02",
+        title: "Register & Get QR Pass",
+        desc: "Book your seat for approved campus events before deadlines and access your digital pass anytime.",
         icon: CalendarCheck,
     },
     {
-        title: "Streamlined Faculty Approvals",
-        desc: "Club Heads submit proposals and Faculty coordinators review, approve, and oversee campus-wide activities.",
-        icon: ShieldCheck,
+        step: "03",
+        title: "Attend & Share Feedback",
+        desc: "Check in at the venue, verify attendance, and rate events to help shape campus reputation.",
+        icon: Sparkles,
     },
 ];
 
 const roles = [
     {
         name: "Students",
-        desc: "Explore upcoming events, join clubs, and manage your tickets from a personalized dashboard.",
+        desc: "Explore upcoming events, join clubs, manage QR tickets, and track notifications from one dashboard.",
         icon: Compass,
     },
     {
         name: "Club Heads",
-        desc: "Coordinate club profiles, organize events, track registrations, and share announcements.",
+        desc: "Coordinate club profiles, propose events, verify QR tickets, export CSV rosters, and post announcements.",
         icon: Building2,
     },
     {
         name: "Faculty Coordinators",
-        desc: "Review event proposals, monitor club operations, and view university-wide analytics.",
+        desc: "Approve event proposals with venue conflict detection and monitor university-wide analytics.",
         icon: CheckCircle2,
     },
 ];
 
+const formatDateTime = (date) =>
+    new Date(date).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
 const Landing = () => {
     const { user, token } = useContext(AuthContext);
+    const isAuthenticated = Boolean(token && user);
     const dashboardPath = getDashboardPath(user?.role);
+    const role = normalizeRole(user?.role);
+
+    const [clubs, setClubs] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [loadingData, setLoadingData] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setClubs([]);
+            setEvents([]);
+            return;
+        }
+
+        let isMounted = true;
+        setLoadingData(true);
+        Promise.allSettled([
+            api.get("/clubs"),
+            api.get("/events", { params: { timeframe: "upcoming" } }),
+        ])
+            .then(([clubsRes, eventsRes]) => {
+                if (!isMounted) return;
+                if (clubsRes.status === "fulfilled") {
+                    setClubs((clubsRes.value.data.clubs || []).slice(0, 3));
+                }
+                if (eventsRes.status === "fulfilled") {
+                    setEvents((eventsRes.value.data.events || []).slice(0, 3));
+                }
+            })
+            .finally(() => {
+                if (isMounted) setLoadingData(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isAuthenticated]);
+
+    const eventsLink = isAuthenticated
+        ? role === "faculty"
+            ? "/faculty/events"
+            : "/student/events"
+        : "/login";
+    const clubsLink = isAuthenticated
+        ? role === "faculty"
+            ? "/faculty/clubs"
+            : "/student/clubs"
+        : "/login";
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-            {/* Hero */}
-            <section className="bg-gradient-to-b from-indigo-700 to-indigo-800 dark:from-slate-900 dark:to-slate-950 text-white border-b border-indigo-600/20 dark:border-slate-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-24 text-center">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-indigo-100 border border-white/15 mb-6">
-                        University Club &amp; Event Management System
-                    </span>
-                    <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight max-w-3xl mx-auto">
-                        One unified portal for campus clubs, events, and approvals
-                    </h1>
-                    <p className="text-base sm:text-lg text-indigo-100 dark:text-slate-300 max-w-2xl mx-auto mb-9 leading-relaxed">
-                        Connect students, club coordinators, and faculty in a single organized workspace—from discovering events to managing approvals.
-                    </p>
-                    <div className="flex items-center justify-center gap-3 flex-wrap">
-                        {token && user ? (
-                            <Link
-                                to={dashboardPath}
-                                className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-white text-indigo-700 font-semibold rounded-lg shadow-sm hover:bg-indigo-50 transition-colors text-sm no-underline"
-                            >
-                                Open Dashboard
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/register"
-                                    className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-white text-indigo-700 font-semibold rounded-lg shadow-sm hover:bg-indigo-50 transition-colors text-sm no-underline"
-                                >
-                                    Get Started
-                                </Link>
-                                <Link
-                                    to="/login"
-                                    className="inline-flex items-center justify-center min-h-[44px] px-6 py-3 bg-indigo-600/70 dark:bg-slate-800 text-white font-semibold rounded-lg border border-indigo-400/40 dark:border-slate-700 hover:bg-indigo-600 dark:hover:bg-slate-700 transition-colors text-sm no-underline"
-                                >
-                                    Sign In
-                                </Link>
-                            </>
-                        )}
+        <div className="bg-[#faf9f7] dark:bg-[#0e0f14] text-zinc-900 dark:text-zinc-100">
+            {/* 1. Split Hero Section */}
+            <section
+                id="hero"
+                className="relative overflow-hidden border-b border-stone-200/80 dark:border-zinc-800/80 scroll-mt-20"
+            >
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -top-28 right-0 w-96 h-96 rounded-full bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/15 blur-3xl"
+                />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                        {/* Text Left (First on mobile) */}
+                        <div className="lg:col-span-6 space-y-6 order-1">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd] border border-[#6d5bd0]/20">
+                                Campus Clubs &amp; Events
+                            </span>
+                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 leading-[1.12]">
+                                Your campus. Your community. Your moments.
+                            </h1>
+                            <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-300 leading-relaxed max-w-xl">
+                                CampusResolve helps students discover university clubs, explore approved campus events, reserve seats with QR passes, and stay connected with campus life.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3 pt-1">
+                                {isAuthenticated ? (
+                                    <>
+                                        <Link
+                                            to={dashboardPath}
+                                            className="btn-primary no-underline px-5"
+                                        >
+                                            Open Dashboard
+                                            <ArrowRight className="w-4 h-4" />
+                                        </Link>
+                                        <Link
+                                            to={eventsLink}
+                                            className="btn-secondary no-underline px-5"
+                                        >
+                                            Explore Events
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <a
+                                            href="#events"
+                                            className="btn-primary no-underline px-5"
+                                        >
+                                            Explore Events
+                                            <ArrowRight className="w-4 h-4" />
+                                        </a>
+                                        <a
+                                            href="#clubs"
+                                            className="btn-secondary no-underline px-5"
+                                        >
+                                            Discover Clubs
+                                        </a>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Campus Image Right (Below text on mobile) */}
+                        <div className="lg:col-span-6 order-2">
+                            <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-white dark:bg-[#171820] shadow-xl shadow-zinc-900/10 dark:shadow-black/40">
+                                <div className="aspect-[16/10] w-full">
+                                    <img
+                                        src={campusHeroImg}
+                                        alt="University campus aerial view"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="hidden sm:flex items-center justify-between gap-3 px-4 py-3 bg-white/90 dark:bg-[#171820]/90 backdrop-blur-md border-t border-stone-200/80 dark:border-zinc-800/80">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <MapPin className="w-4 h-4 text-[#6d5bd0] dark:text-[#a78bfa] shrink-0" />
+                                        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200 truncate">
+                                            University Campus · Clubs, Events &amp; Student Activities
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] font-semibold text-[#6d5bd0] dark:text-[#a78bfa] shrink-0">
+                                        CampusResolve
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Features */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
-                <div className="text-center max-w-2xl mx-auto mb-12">
-                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
-                        Built for campus life
+            {/* 2. Campus / Community Highlights */}
+            <section
+                id="about"
+                className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+            >
+                <div className="max-w-2xl mb-10">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa] mb-1.5">
+                        Why CampusResolve
+                    </p>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                        Built for modern campus life
                     </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Structured workflows for every role on campus.
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">
+                        Structured workflows connecting students, club coordinators, and faculty.
                     </p>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {features.map((feature) => {
-                        const Icon = feature.icon;
+                    {highlights.map((item) => {
+                        const Icon = item.icon;
                         return (
-                            <div key={feature.title} className="card p-6">
-                                <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4">
+                            <div key={item.title} className="card p-6">
+                                <div className="w-10 h-10 rounded-lg bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#6d5bd0] dark:text-[#a78bfa] flex items-center justify-center mb-4">
                                     <Icon className="w-5 h-5" />
                                 </div>
-                                <h3 className="font-semibold text-slate-900 dark:text-white text-base mb-2">
-                                    {feature.title}
+                                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50 text-base mb-2">
+                                    {item.title}
                                 </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                    {feature.desc}
+                                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                    {item.desc}
                                 </p>
                             </div>
                         );
@@ -123,39 +261,326 @@ const Landing = () => {
                 </div>
             </section>
 
-            {/* Roles */}
-            <section className="bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-800 py-16">
+            {/* 3. Featured Clubs */}
+            <section
+                id="clubs"
+                className="bg-white dark:bg-[#13141b] border-y border-stone-200/80 dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="text-center max-w-2xl mx-auto mb-12">
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                            Role-based workspaces
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa] mb-1.5">
+                                Student Organizations
+                            </p>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                                Featured Clubs
+                            </h2>
+                        </div>
+                        <Link
+                            to={clubsLink}
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6d5bd0] dark:text-[#a78bfa] hover:underline no-underline"
+                        >
+                            {isAuthenticated ? "View All Clubs" : "Sign in to Browse Clubs"}
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+
+                    {loadingData ? (
+                        <div className="card p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                            Loading campus clubs...
+                        </div>
+                    ) : clubs.length === 0 ? (
+                        <div className="card p-10 text-center space-y-3 bg-[#faf9f7] dark:bg-[#171820]">
+                            <Building2 className="w-9 h-9 text-zinc-400 mx-auto" />
+                            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                                {isAuthenticated
+                                    ? "No active clubs available yet"
+                                    : "Sign in to explore active university clubs"}
+                            </h3>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+                                {isAuthenticated
+                                    ? "Clubs created by faculty coordinators will appear here."
+                                    : "Use your university account or demo login to browse clubs, view member counts, and join communities."}
+                            </p>
+                            {!isAuthenticated && (
+                                <div className="pt-1 flex justify-center gap-3 flex-wrap">
+                                    <Link to="/login" className="btn-primary text-xs no-underline">
+                                        Login
+                                    </Link>
+                                    <Link to="/register" className="btn-secondary text-xs no-underline">
+                                        Register
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {clubs.map((club) => (
+                                <article
+                                    key={club._id}
+                                    className="card p-6 flex flex-col justify-between gap-4"
+                                >
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]">
+                                                {club.category}
+                                            </span>
+                                            {club.reviewCount > 0 && (
+                                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                                    {club.averageRating} ({club.reviewCount})
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-50">
+                                            {club.name}
+                                        </h3>
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                            {club.description}
+                                        </p>
+                                    </div>
+                                    <div className="pt-3 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Users className="w-3.5 h-3.5" />
+                                            {club.memberCount} members
+                                        </span>
+                                        <Link
+                                            to={
+                                                role === "faculty"
+                                                    ? `/faculty/clubs/${club._id}`
+                                                    : `/student/clubs/${club._id}`
+                                            }
+                                            className="font-semibold text-[#6d5bd0] dark:text-[#a78bfa] no-underline hover:underline"
+                                        >
+                                            View Club
+                                        </Link>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* 4. Upcoming Events */}
+            <section
+                id="events"
+                className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+            >
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa] mb-1.5">
+                            Campus Calendar
+                        </p>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                            Upcoming Events
                         </h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Tailored navigation and dashboards for students, club heads, and faculty.
+                    </div>
+                    <Link
+                        to={eventsLink}
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#6d5bd0] dark:text-[#a78bfa] hover:underline no-underline"
+                    >
+                        {isAuthenticated ? "Explore All Events" : "Sign in to View Events"}
+                        <ArrowRight className="w-4 h-4" />
+                    </Link>
+                </div>
+
+                {loadingData ? (
+                    <div className="card p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                        Loading upcoming events...
+                    </div>
+                ) : events.length === 0 ? (
+                    <div className="card p-10 text-center space-y-3">
+                        <CalendarDays className="w-9 h-9 text-zinc-400 mx-auto" />
+                        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                            {isAuthenticated
+                                ? "No upcoming approved events yet"
+                                : "Sign in to view upcoming campus events"}
+                        </h3>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-md mx-auto">
+                            {isAuthenticated
+                                ? "Approved events with open registration will appear here."
+                                : "Log in with your student or demo account to see approved events, seat availability, and register for QR passes."}
+                        </p>
+                        {!isAuthenticated && (
+                            <div className="pt-1 flex justify-center gap-3 flex-wrap">
+                                <Link to="/login" className="btn-primary text-xs no-underline">
+                                    Login
+                                </Link>
+                                <Link to="/register" className="btn-secondary text-xs no-underline">
+                                    Register
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {events.map((ev) => (
+                            <article
+                                key={ev._id}
+                                className="card p-6 flex flex-col justify-between gap-4"
+                            >
+                                <div className="space-y-2.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-[#6d5bd0]/10 dark:bg-[#6d5bd0]/20 text-[#5b48c4] dark:text-[#c4b5fd]">
+                                            {ev.category}
+                                        </span>
+                                        <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                                            {ev.club?.name}
+                                        </span>
+                                    </div>
+                                    <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-50 line-clamp-1">
+                                        {ev.title}
+                                    </h3>
+                                    <div className="space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                        <p className="flex items-center gap-1.5">
+                                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                                            <span>{formatDateTime(ev.startDateTime)}</span>
+                                        </p>
+                                        <p className="flex items-center gap-1.5">
+                                            <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                            <span className="truncate">{ev.venue}</span>
+                                        </p>
+                                        <p className="flex items-center gap-1.5">
+                                            <Users className="w-3.5 h-3.5 shrink-0" />
+                                            <span>
+                                                {ev.registeredCount || 0} / {ev.seatCapacity} Seats Filled
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link
+                                    to={`/events/${ev._id}`}
+                                    className="btn-secondary text-xs w-full no-underline"
+                                >
+                                    View Event Details
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                </Link>
+                            </article>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            {/* 5. How CampusResolve Works & Role Workspaces */}
+            <section
+                id="activities"
+                className="bg-white dark:bg-[#13141b] border-y border-stone-200/80 dark:border-zinc-800/80 py-14 sm:py-20 scroll-mt-20"
+            >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-14">
+                    <div>
+                        <div className="max-w-2xl mb-10">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa] mb-1.5">
+                                Campus Activities
+                            </p>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                                How CampusResolve works
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {steps.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <div
+                                        key={item.step}
+                                        className="p-6 rounded-xl border border-stone-200 dark:border-zinc-800 bg-[#faf9f7] dark:bg-[#171820]"
+                                    >
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-xs font-bold tracking-wider text-[#6d5bd0] dark:text-[#a78bfa]">
+                                                STEP {item.step}
+                                            </span>
+                                            <Icon className="w-4 h-4 text-zinc-400" />
+                                        </div>
+                                        <h3 className="font-semibold text-base text-zinc-900 dark:text-zinc-50 mb-1.5">
+                                            {item.title}
+                                        </h3>
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                            {item.desc}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div className="max-w-2xl mb-8">
+                            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                                Role-based workspaces
+                            </h3>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                                Tailored navigation and permissions for every campus role.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {roles.map((r) => {
+                                const Icon = r.icon;
+                                return (
+                                    <div
+                                        key={r.name}
+                                        className="p-6 rounded-xl border border-stone-200 dark:border-zinc-800 bg-[#faf9f7] dark:bg-[#171820]"
+                                    >
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <span className="w-9 h-9 rounded-lg bg-[#6d5bd0] text-white flex items-center justify-center shrink-0">
+                                                <Icon className="w-4 h-4" />
+                                            </span>
+                                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-50 text-base">
+                                                {r.name}
+                                            </h4>
+                                        </div>
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                                            {r.desc}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 6. Final CTA & Contact */}
+            <section
+                id="contact"
+                className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20 scroll-mt-20"
+            >
+                <div className="card p-8 sm:p-10 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white dark:bg-[#171820]">
+                    <div className="space-y-2 max-w-xl">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-[#6d5bd0] dark:text-[#a78bfa]">
+                            Get Connected
+                        </p>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-50">
+                            Ready to join your campus community?
+                        </h2>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                            Sign in with your university email to register for upcoming events, manage club memberships, or coordinate campus activities.
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {roles.map((role) => {
-                            const Icon = role.icon;
-                            return (
-                                <div
-                                    key={role.name}
-                                    className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
+                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                        {isAuthenticated ? (
+                            <Link
+                                to={dashboardPath}
+                                className="btn-primary no-underline px-5"
+                            >
+                                Go to Dashboard
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/register"
+                                    className="btn-primary no-underline px-5"
                                 >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <span className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                                            <Icon className="w-4 h-4" />
-                                        </span>
-                                        <h3 className="font-semibold text-slate-900 dark:text-white text-base">
-                                            {role.name}
-                                        </h3>
-                                    </div>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                        {role.desc}
-                                    </p>
-                                </div>
-                            );
-                        })}
+                                    Create Account
+                                </Link>
+                                <Link
+                                    to="/login"
+                                    className="btn-secondary no-underline px-5"
+                                >
+                                    Sign In
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>
