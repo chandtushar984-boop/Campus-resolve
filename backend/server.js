@@ -8,6 +8,7 @@ import issueRoutes from "./src/routes/issue.routes.js";
 import clubRoutes from "./src/routes/club.routes.js";
 import eventRoutes from "./src/routes/event.routes.js";
 import registrationRoutes from "./src/routes/registration.routes.js";
+import notificationRoutes from "./src/routes/notification.routes.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/api/issues", issueRoutes);
 app.use("/api/clubs", clubRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const port = process.env.PORT || 4000;
 

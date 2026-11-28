@@ -8,6 +8,7 @@ import {
     Megaphone,
     Pin,
     Plus,
+    Star,
     Trash2,
     UserCheck,
     Users,
@@ -355,6 +356,13 @@ const ClubDetails = () => {
                                     <UserCheck className="w-4 h-4" />
                                     Co-Head: {club.coHead?.name || "Unassigned"}
                                 </span>
+                                {club.reviewCount > 0 && (
+                                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                                        <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
+                                        {club.averageRating} / 5 ({club.reviewCount}{" "}
+                                        {club.reviewCount === 1 ? "review" : "reviews"})
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>

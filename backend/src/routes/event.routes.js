@@ -18,6 +18,10 @@ import {
     registerForEvent,
     verifyTicket,
 } from "../controllers/registration.controller.js";
+import {
+    getEventReviews,
+    submitEventReview,
+} from "../controllers/review.controller.js";
 import { auth } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 
@@ -116,5 +120,9 @@ router.patch(
     authorizeRoles("club_head", "co_head", "faculty", "admin"),
     markAttendance
 );
+
+// Event reviews & ratings
+router.get("/:id/reviews", auth, getEventReviews);
+router.post("/:id/reviews", auth, authorizeRoles("student"), submitEventReview);
 
 export default router;

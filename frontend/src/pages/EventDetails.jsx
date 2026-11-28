@@ -8,6 +8,7 @@ import {
     CheckCircle2,
     Clock,
     MapPin,
+    Star,
     Ticket,
     Users,
     XCircle,
@@ -51,6 +52,12 @@ const EventDetails = () => {
 
     const [event, setEvent] = useState(null);
     const [myRegistration, setMyRegistration] = useState(null);
+    const [reviews, setReviews] = useState([]);
+    const [ratingSummary, setRatingSummary] = useState({ averageRating: null, reviewCount: 0 });
+    const [reviewEligibility, setReviewEligibility] = useState(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [actionBusy, setActionBusy] = useState(false);
@@ -68,6 +75,18 @@ const EventDetails = () => {
                     setMyRegistration(regRes.data.registration || null);
                 } catch {
                     setMyRegistration(null);
+                }
+            }
+            if (res.data.event?.approvalStatus === "Approved") {
+                try {
+                    const revRes = await api.get(`/events/${id}/reviews`);
+                    setReviews(revRes.data.reviews || []);
+                    setRatingSummary(
+                        revRes.data.ratingSummary || { averageRating: null, reviewCount: 0 }
+                    );
+                    setReviewEligibility(revRes.data.eligibility || null);
+                } catch {
+                    setReviews([]);
                 }
             }
             setError("");
@@ -162,6 +181,34 @@ const EventDetails = () => {
         }
     };
 
+    const handleSubmitReview = async (e) => {
+        e.preventDefault();
+        if (!reviewComment.trim()) {
+            Toast.fire({ icon: "error", title: "Please write a short review." });
+            return;
+        }
+        setSubmittingReview(true);
+        try {
+            const res = await api.post(`/events/${id}/reviews`, {
+                rating: reviewRating,
+                comment: reviewComment.trim(),
+            });
+            Toast.fire({
+                icon: "success",
+                title: res.data.message || "Review submitted!",
+            });
+            setReviewComment("");
+            await loadEvent();
+        } catch (err) {
+            Toast.fire({
+                icon: "error",
+                title: err.response?.data?.message || "Failed to submit review.",
+            });
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
     if (isLoading) return <Loader label="Loading event..." />;
 
     if (error || !event) {
@@ -213,6 +260,14 @@ const EventDetails = () => {
                                 <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
                                     {event.category}
                                 </span>
+                                {event.approvalStatus === "Approved" && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300">
+                                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                        {ratingSummary.reviewCount > 0
+                                            ? `${ratingSummary.averageRating} (${ratingSummary.reviewCount} ${ratingSummary.reviewCount === 1 ? "review" : "reviews"})`
+                                            : "No reviews yet"}
+                                    </span>
+                                )}
                             </div>
                             <h1 className="page-title">{event.title}</h1>
                             <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -421,6 +476,103 @@ const EventDetails = () => {
                     </div>
                 </div>
             </article>
+
+            {event.approvalStatus === "Approved" && (
+                <section className="card p-6 sm:p-8 space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                                Event Reviews &amp; Ratings
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                {ratingSummary.reviewCount > 0
+                                    ? `Average Rating: ${ratingSummary.averageRating} / 5 across ${ratingSummary.reviewCount} ${ratingSummary.reviewCount === 1 ? "review" : "reviews"}`
+                                    : "No reviews have been submitted for this event yet."}
+                            </p>
+                        </div>
+                    </div>
+
+                    {isStudent && reviewEligibility?.canReview && (
+                        <form
+                            onSubmit={handleSubmitReview}
+                            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3"
+                        >
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <label className="form-label mb-0">
+                                    Rate this event
+                                </label>
+                                <div className="flex items-center gap-1" role="radiogroup" aria-label="Event rating">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setReviewRating(star)}
+                                            className="p-1 cursor-pointer"
+                                            aria-label={`${star} star${star > 1 ? "s" : ""}`}
+                                        >
+                                            <Star
+                                                className={`w-5 h-5 ${
+                                                    star <= reviewRating
+                                                        ? "fill-amber-400 text-amber-500"
+                                                        : "text-slate-300 dark:text-slate-600"
+                                                }`}
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <textarea
+                                rows={3}
+                                maxLength={1000}
+                                value={reviewComment}
+                                onChange={(e) => setReviewComment(e.target.value)}
+                                placeholder="Share your feedback about this event..."
+                                className="form-input"
+                                required
+                            />
+                            <div className="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={submittingReview}
+                                    className="btn-primary text-xs disabled:opacity-60"
+                                >
+                                    {submittingReview ? "Submitting..." : "Submit Review"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {isStudent && reviewEligibility && !reviewEligibility.canReview && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/40 px-3.5 py-2.5 rounded-lg border border-slate-200/70 dark:border-slate-700/60">
+                            {reviewEligibility.reason}
+                        </p>
+                    )}
+
+                    {reviews.length > 0 && (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {reviews.map((rev) => (
+                                <div key={rev._id} className="py-3.5 first:pt-0 last:pb-0 space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="text-sm font-medium text-slate-900 dark:text-white">
+                                            {rev.student?.name || "Student"}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                            {rev.rating} / 5
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                                        {rev.comment}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                        {formatDateTime(rev.createdAt)}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 };

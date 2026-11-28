@@ -4,7 +4,18 @@ import path from "node:path";
 import mongoose from "mongoose";
 import Event, { APPROVAL_STATUSES, EVENT_CATEGORIES } from "../models/event.model.js";
 import Club from "../models/club.model.js";
+import EventRegistration from "../models/eventRegistration.model.js";
 import { isClubOrganizerRole, isFacultyRole } from "../middleware/role.middleware.js";
+import { getEventRatingsMap } from "./review.controller.js";
+import {
+    createNotification,
+    createNotificationsForUsers,
+} from "../services/notification.service.js";
+import {
+    sendEventApprovedEmail,
+    sendEventCancelledEmail,
+    sendEventRejectedEmail,
+} from "../services/email.service.js";
 
 const MAX_POSTER_BYTES = 2 * 1024 * 1024; // 2 MB
 
@@ -280,9 +291,23 @@ const getPublicEvents = async (req, res) => {
             .sort({ startDateTime: 1 })
             .lean();
 
+        const ratingsMap =
+            events.length > 0
+                ? await getEventRatingsMap(events.map((ev) => ev._id.toString()))
+                : new Map();
+
+        const enrichedEvents = events.map((ev) => {
+            const summary = ratingsMap.get(ev._id.toString());
+            return {
+                ...ev,
+                averageRating: summary ? summary.averageRating : null,
+                reviewCount: summary ? summary.reviewCount : 0,
+            };
+        });
+
         return res.status(200).json({
             success: true,
-            events,
+            events: enrichedEvents,
         });
     } catch (error) {
         return res.status(500).json({
@@ -402,6 +427,16 @@ const getEventById = async (req, res) => {
         const responseEvent = { ...event };
         if (!isOrganizerOrFaculty) {
             delete responseEvent.rejectionReason;
+        }
+
+        if (event.approvalStatus === "Approved") {
+            const ratingsMap = await getEventRatingsMap([event._id.toString()]);
+            const summary = ratingsMap.get(event._id.toString());
+            responseEvent.averageRating = summary ? summary.averageRating : null;
+            responseEvent.reviewCount = summary ? summary.reviewCount : 0;
+        } else {
+            responseEvent.averageRating = null;
+            responseEvent.reviewCount = 0;
         }
 
         return res.status(200).json({
@@ -563,9 +598,34 @@ const approveEvent = async (req, res) => {
 
         const populated = await Event.findById(event._id)
             .populate("club", "name category logo")
-            .populate("createdBy", "name role")
+            .populate("createdBy", "name email role")
             .populate("reviewedBy", "name")
             .lean();
+
+        try {
+            if (mongoose.connection.readyState === 1) {
+                await createNotification({
+                    recipient: event.createdBy,
+                    type: "event_approved",
+                    title: "Event Approved",
+                    message: `Your event "${event.title}" has been approved.`,
+                    link: `/events/${event._id}`,
+                    relatedEvent: event._id,
+                    relatedClub: event.club,
+                });
+                if (populated?.createdBy?.email) {
+                    await sendEventApprovedEmail({
+                        to: populated.createdBy.email,
+                        organizerName: populated.createdBy.name,
+                        eventTitle: event.title,
+                        venue: event.venue,
+                        startDateTime: event.startDateTime,
+                    });
+                }
+            }
+        } catch {
+            // Notification/email failure must not undo event approval
+        }
 
         return res.status(200).json({
             success: true,
@@ -622,9 +682,33 @@ const rejectEvent = async (req, res) => {
 
         const populated = await Event.findById(event._id)
             .populate("club", "name category logo")
-            .populate("createdBy", "name role")
+            .populate("createdBy", "name email role")
             .populate("reviewedBy", "name")
             .lean();
+
+        try {
+            if (mongoose.connection.readyState === 1) {
+                await createNotification({
+                    recipient: event.createdBy,
+                    type: "event_rejected",
+                    title: "Event Rejected",
+                    message: `Your event "${event.title}" was rejected: ${event.rejectionReason}`,
+                    link: `/events/${event._id}`,
+                    relatedEvent: event._id,
+                    relatedClub: event.club,
+                });
+                if (populated?.createdBy?.email) {
+                    await sendEventRejectedEmail({
+                        to: populated.createdBy.email,
+                        organizerName: populated.createdBy.name,
+                        eventTitle: event.title,
+                        reason: event.rejectionReason,
+                    });
+                }
+            }
+        } catch {
+            // Notification/email failure must not undo event rejection
+        }
 
         return res.status(200).json({
             success: true,
@@ -666,6 +750,48 @@ const cancelEvent = async (req, res) => {
 
         event.approvalStatus = "Cancelled";
         await event.save();
+
+        try {
+            if (mongoose.connection.readyState === 1) {
+                const activeRegs = await EventRegistration.find({
+                    event: event._id,
+                    status: "Registered",
+                })
+                    .populate("student", "name email")
+                    .lean();
+
+                const recipientIds = activeRegs
+                    .map((r) => r.student?._id || r.student)
+                    .filter(Boolean);
+
+                if (recipientIds.length > 0) {
+                    await createNotificationsForUsers(recipientIds, {
+                        type: "event_cancelled",
+                        title: "Event Cancelled",
+                        message: `"${event.title}" has been cancelled.`,
+                        link: `/events/${event._id}`,
+                        relatedEvent: event._id,
+                        relatedClub: event.club?._id || event.club,
+                    });
+
+                    await Promise.allSettled(
+                        activeRegs
+                            .filter((r) => r.student?.email)
+                            .map((r) =>
+                                sendEventCancelledEmail({
+                                    to: r.student.email,
+                                    recipientName: r.student.name,
+                                    eventTitle: event.title,
+                                    venue: event.venue,
+                                    startDateTime: event.startDateTime,
+                                })
+                            )
+                    );
+                }
+            }
+        } catch {
+            // Notification/email failure must not undo event cancellation
+        }
 
         return res.status(200).json({
             success: true,

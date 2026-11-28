@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 
-/**
- * Notification bell and dropdown shell.
- * Ready for Task 5 backend integration via props; renders empty state by default
- * with zero hardcoded notifications or unread counts.
- */
+const formatTimestamp = (date) => {
+    if (!date) return "";
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
 const NotificationBell = ({
     notifications = [],
     unreadCount = 0,
     isLoading = false,
     error = "",
     onMarkAllRead,
+    onNotificationClick,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
@@ -40,6 +48,13 @@ const NotificationBell = ({
     }, [isOpen]);
 
     const displayCount = unreadCount > 99 ? "99+" : unreadCount;
+
+    const handleItemClick = (item) => {
+        setIsOpen(false);
+        if (typeof onNotificationClick === "function") {
+            onNotificationClick(item);
+        }
+    };
 
     return (
         <div className="relative" ref={containerRef}>
@@ -112,22 +127,35 @@ const NotificationBell = ({
                         ) : (
                             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {notifications.map((item) => (
-                                    <li
-                                        key={item._id || item.id}
-                                        className={`px-4 py-3 text-sm ${
-                                            item.read
-                                                ? "bg-transparent"
-                                                : "bg-indigo-50/50 dark:bg-indigo-950/20"
-                                        }`}
-                                    >
-                                        <p className="font-medium text-slate-800 dark:text-slate-100 text-xs">
-                                            {item.title}
-                                        </p>
-                                        {item.message && (
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                {item.message}
-                                            </p>
-                                        )}
+                                    <li key={item._id || item.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleItemClick(item)}
+                                            className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer ${
+                                                item.read
+                                                    ? "bg-transparent"
+                                                    : "bg-indigo-50/50 dark:bg-indigo-950/20"
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <p className="font-medium text-slate-800 dark:text-slate-100 text-xs">
+                                                    {item.title}
+                                                </p>
+                                                {!item.read && (
+                                                    <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0 mt-1" />
+                                                )}
+                                            </div>
+                                            {item.message && (
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                                                    {item.message}
+                                                </p>
+                                            )}
+                                            {item.createdAt && (
+                                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                                                    {formatTimestamp(item.createdAt)}
+                                                </p>
+                                            )}
+                                        </button>
                                     </li>
                                 ))}
                             </ul>

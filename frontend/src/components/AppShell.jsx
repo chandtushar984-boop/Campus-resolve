@@ -1,6 +1,7 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GraduationCap, LogOut, Menu, X } from "lucide-react";
+import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
 import {
     getDashboardPath,
@@ -17,6 +18,58 @@ const AppShell = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notifLoading, setNotifLoading] = useState(false);
+    const [notifError, setNotifError] = useState("");
+
+    const fetchNotifications = useCallback(async () => {
+        if (!user) return;
+        setNotifLoading(true);
+        try {
+            const res = await api.get("/notifications");
+            setNotifications(res.data.notifications || []);
+            setUnreadCount(res.data.unreadCount || 0);
+            setNotifError("");
+        } catch {
+            setNotifError("Failed to load notifications.");
+        } finally {
+            setNotifLoading(false);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, [fetchNotifications, location.pathname]);
+
+    const handleMarkAllRead = async () => {
+        try {
+            await api.patch("/notifications/read-all");
+            setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+            setUnreadCount(0);
+        } catch {
+            // ignore silently
+        }
+    };
+
+    const handleNotificationClick = async (item) => {
+        if (!item.read && item._id) {
+            try {
+                await api.patch(`/notifications/${item._id}/read`);
+                setNotifications((prev) =>
+                    prev.map((n) =>
+                        n._id === item._id ? { ...n, read: true } : n
+                    )
+                );
+                setUnreadCount((prev) => Math.max(0, prev - 1));
+            } catch {
+                // ignore silently
+            }
+        }
+        if (item.link) {
+            navigate(item.link);
+        }
+    };
 
     const role = normalizeRole(user?.role);
     const roleLabel = getRoleLabel(user?.role);
@@ -168,7 +221,14 @@ const AppShell = ({ children }) => {
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                         <ThemeToggle />
-                        <NotificationBell />
+                        <NotificationBell
+                            notifications={notifications}
+                            unreadCount={unreadCount}
+                            isLoading={notifLoading}
+                            error={notifError}
+                            onMarkAllRead={handleMarkAllRead}
+                            onNotificationClick={handleNotificationClick}
+                        />
                         <div className="hidden sm:flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-700">
                             <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                                 {user?.name?.charAt(0)?.toUpperCase() || "U"}

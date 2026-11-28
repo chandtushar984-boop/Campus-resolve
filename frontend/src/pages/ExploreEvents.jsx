@@ -6,6 +6,7 @@ import {
     CalendarDays,
     MapPin,
     Search,
+    Star,
     Users,
 } from "lucide-react";
 import api from "../services/api";
@@ -201,6 +202,14 @@ const ExploreEvents = () => {
                                                 <Users className="w-3.5 h-3.5 shrink-0" />
                                                 <span>
                                                     {event.registeredCount || 0} / {event.seatCapacity} Seats Filled
+                                                </span>
+                                            </p>
+                                            <p className="flex items-center gap-1.5">
+                                                <Star className="w-3.5 h-3.5 shrink-0 text-amber-500" />
+                                                <span>
+                                                    {event.reviewCount > 0
+                                                        ? `${event.averageRating} (${event.reviewCount} ${event.reviewCount === 1 ? "review" : "reviews"})`
+                                                        : "No reviews yet"}
                                                 </span>
                                             </p>
                                         </div>
