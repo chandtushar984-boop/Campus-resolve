@@ -427,6 +427,15 @@ const getEventById = async (req, res) => {
         const responseEvent = { ...event };
         if (!isOrganizerOrFaculty) {
             delete responseEvent.rejectionReason;
+            delete responseEvent.reviewedBy;
+            delete responseEvent.reviewedAt;
+            if (responseEvent.createdBy && typeof responseEvent.createdBy === "object") {
+                responseEvent.createdBy = {
+                    _id: responseEvent.createdBy._id,
+                    name: responseEvent.createdBy.name,
+                    role: responseEvent.createdBy.role,
+                };
+            }
         }
 
         if (event.approvalStatus === "Approved") {

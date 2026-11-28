@@ -281,9 +281,18 @@ const getEventReviews = async (req, res) => {
             });
         }
 
+        if (event.approvalStatus !== "Approved" && !req.user?.userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. Reviews are only available for approved events.",
+            });
+        }
+
+        const studentSelect = req.user?.userId ? "name rollNo course" : "name";
+
         const [reviews, ratingsMap] = await Promise.all([
             EventReview.find({ event: eventId })
-                .populate("student", "name rollNo course")
+                .populate("student", studentSelect)
                 .sort({ createdAt: -1 })
                 .lean(),
             getEventRatingsMap([eventId]),

@@ -15,18 +15,18 @@ import {
     updateClub,
     updateClubAnnouncement,
 } from "../controllers/club.controller.js";
-import { auth } from "../middleware/auth.middleware.js";
+import { auth, optionalAuth } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 
 const router = express.Router();
 
 // Directory & My Clubs
-router.get("/", auth, getAllClubs);
+router.get("/", optionalAuth, getAllClubs);
 router.get("/my-clubs", auth, getMyClubs);
 router.post("/", auth, authorizeRoles("faculty", "admin"), createClub);
 
 // Single Club & Management
-router.get("/:id", auth, getClubById);
+router.get("/:id", optionalAuth, getClubById);
 router.put("/:id", auth, authorizeRoles("club_head", "co_head", "faculty", "admin"), updateClub);
 router.patch("/:id/assign-head", auth, authorizeRoles("faculty", "admin"), assignClubHead);
 router.patch("/:id/assign-co-head", auth, authorizeRoles("faculty", "admin"), assignCoHead);

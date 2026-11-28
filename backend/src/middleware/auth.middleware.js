@@ -40,5 +40,20 @@ const auth = async(req, res, next) => {
     }
 }
 
+const optionalAuth = (req, _res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader?.split(" ")[1];
+        if (token) {
+            req.user = jwt.verify(token, process.env.JWT_SECRET);
+        } else {
+            req.user = null;
+        }
+    } catch {
+        req.user = null;
+    }
+    next();
+};
 
-export { auth}
+
+export { auth, optionalAuth }

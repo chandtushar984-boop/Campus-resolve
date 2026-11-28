@@ -89,9 +89,12 @@ const getAllClubs = async (req, res) => {
             ];
         }
 
+        const isAuthenticated = Boolean(req.user?.userId);
+        const headSelect = isAuthenticated ? "name email rollNo" : "name";
+
         const clubs = await Club.find(filter)
-            .populate("clubHead", "name email rollNo")
-            .populate("coHead", "name email rollNo")
+            .populate("clubHead", headSelect)
+            .populate("coHead", headSelect)
             .sort({ createdAt: -1 })
             .lean();
 
@@ -102,12 +105,14 @@ const getAllClubs = async (req, res) => {
                 { $match: { club: { $in: clubIds } } },
                 { $group: { _id: "$club", count: { $sum: 1 } } },
             ]),
-            ClubMembership.find({
-                club: { $in: clubIds },
-                user: req.user.userId,
-            })
-                .select("club")
-                .lean(),
+            isAuthenticated
+                ? ClubMembership.find({
+                      club: { $in: clubIds },
+                      user: req.user.userId,
+                  })
+                      .select("club")
+                      .lean()
+                : [],
             getClubRatingsMap(clubIds.map((id) => id.toString())),
         ]);
 
@@ -197,12 +202,15 @@ const getClubById = async (req, res) => {
             });
         }
 
+        const isAuthenticated = Boolean(req.user?.userId);
+        const headSelect = isAuthenticated ? "name email rollNo course" : "name";
+
         const club = await Club.findById(id)
-            .populate("clubHead", "name email rollNo course")
-            .populate("coHead", "name email rollNo course")
+            .populate("clubHead", headSelect)
+            .populate("coHead", headSelect)
             .lean();
 
-        if (!club) {
+        if (!club || (!club.isActive && !isFacultyRole(req.user?.role))) {
             return res.status(404).json({
                 success: false,
                 message: "Club not found.",
@@ -211,7 +219,9 @@ const getClubById = async (req, res) => {
 
         const [memberCount, membership, ratingsMap] = await Promise.all([
             ClubMembership.countDocuments({ club: id }),
-            ClubMembership.findOne({ club: id, user: req.user.userId }).lean(),
+            isAuthenticated
+                ? ClubMembership.findOne({ club: id, user: req.user.userId }).lean()
+                : null,
             getClubRatingsMap([id]),
         ]);
         const rating = ratingsMap.get(id);

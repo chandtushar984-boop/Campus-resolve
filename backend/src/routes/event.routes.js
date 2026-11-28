@@ -23,7 +23,7 @@ import {
     getEventReviews,
     submitEventReview,
 } from "../controllers/review.controller.js";
-import { auth } from "../middleware/auth.middleware.js";
+import { auth, optionalAuth } from "../middleware/auth.middleware.js";
 import { authorizeRoles } from "../middleware/role.middleware.js";
 
 const router = express.Router();
@@ -36,8 +36,8 @@ router.post(
     uploadPoster
 );
 
-// Public approved event discovery (authenticated users)
-router.get("/", auth, getPublicEvents);
+// Public approved event discovery
+router.get("/", optionalAuth, getPublicEvents);
 
 // Organizer & Faculty management listings (must precede /:id)
 router.get(
@@ -62,7 +62,7 @@ router.post(
 );
 
 // Single event & updates
-router.get("/:id", auth, getEventById);
+router.get("/:id", optionalAuth, getEventById);
 router.put(
     "/:id",
     auth,
@@ -129,7 +129,7 @@ router.patch(
 );
 
 // Event reviews & ratings
-router.get("/:id/reviews", auth, getEventReviews);
+router.get("/:id/reviews", optionalAuth, getEventReviews);
 router.post("/:id/reviews", auth, authorizeRoles("student"), submitEventReview);
 
 export default router;
