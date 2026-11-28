@@ -171,3 +171,6 @@ npm run create-admin
 - Pagination and search/filter on complaint lists
 
 # Campus-resolve
+## Contributors
+
+- Raunak Kumar ([@Raunakgit12](https://github.com/Raunakgit12))
